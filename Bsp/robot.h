@@ -41,13 +41,14 @@ public:
             // electron.SetJointEnable(electron.joint[ANY], true);
         };
 
-        joint[2] = JointStatus_t{ // Left arm roll
+        /*joint[2] = JointStatus_t{ // Left arm roll
             4,
             -9,
             3,
             0,
             0,
-            30,
+            //30,
+            60,
             false
             // electron.SetJointId(electron.joint[ANY], 4);
             // electron.SetJointInitAngle(electron.joint[ANY], 0);
@@ -56,6 +57,44 @@ public:
             // electron.SetJointKd(electron.joint[ANY], 600);
             // electron.SetJointTorqueLimit(electron.joint[ANY], 1);
             // electron.SetJointEnable(electron.joint[ANY], true);
+        };*/
+
+
+        /*joint[2] = JointStatus_t{ // Left arm roll
+                4,
+                -20,
+                15,
+                0,
+                0,
+                //30,
+                60,
+                false
+                // electron.SetJointId(electron.joint[ANY], 4);
+                // electron.SetJointInitAngle(electron.joint[ANY], 0);
+                // electron.SetJointKp(electron.joint[ANY], 50);
+                // electron.SetJointKi(electron.joint[ANY], 0.8);
+                // electron.SetJointKd(electron.joint[ANY], 600);
+                // electron.SetJointTorqueLimit(electron.joint[ANY], 1);
+                // electron.SetJointEnable(electron.joint[ANY], true);
+        };*/
+
+
+        joint[2] = JointStatus_t{ // Left arm roll
+                4,
+                15,
+                45,
+                0,
+                0,
+                //30,
+                30,
+                false
+                // electron.SetJointId(electron.joint[ANY], 4);
+                // electron.SetJointInitAngle(electron.joint[ANY], 0);
+                // electron.SetJointKp(electron.joint[ANY], 50);
+                // electron.SetJointKi(electron.joint[ANY], 0.8);
+                // electron.SetJointKd(electron.joint[ANY], 600);
+                // electron.SetJointTorqueLimit(electron.joint[ANY], 1);
+                // electron.SetJointEnable(electron.joint[ANY], true);
         };
 
         joint[3] = JointStatus_t{ // Left arm pitch
@@ -75,13 +114,32 @@ public:
             // electron.SetJointEnable(electron.joint[ANY], true);
         };
 
-        joint[4] = JointStatus_t{ // Right arm roll
+       /* joint[4] = JointStatus_t{ // Right arm roll
             8,
             133,
             141,
             0,
             0,
-            30,
+           // 30,
+           120,
+            true
+            // electron.SetJointId(electron.joint[ANY], 8);
+            // electron.SetJointInitAngle(electron.joint[ANY], 0);
+            // electron.SetJointKp(electron.joint[ANY], 50);
+            // electron.SetJointKi(electron.joint[ANY], 0.8);
+            // electron.SetJointKd(electron.joint[ANY], 600);
+            // electron.SetJointTorqueLimit(electron.joint[ANY], 1);
+            // electron.SetJointEnable(electron.joint[ANY], true);
+        };*/
+
+         joint[4] = JointStatus_t{ // Right arm roll
+            8,
+            115,
+            165,
+            0,
+            0,
+           // 30,
+           120,
             true
             // electron.SetJointId(electron.joint[ANY], 8);
             // electron.SetJointInitAngle(electron.joint[ANY], 0);
@@ -91,6 +149,24 @@ public:
             // electron.SetJointTorqueLimit(electron.joint[ANY], 1);
             // electron.SetJointEnable(electron.joint[ANY], true);
         };
+
+        /*joint[4] = JointStatus_t{ // Right arm roll
+                8,
+                0,
+                131,
+                0,
+                0,
+                // 30,
+                120,
+                false
+                // electron.SetJointId(electron.joint[ANY], 8);
+                // electron.SetJointInitAngle(electron.joint[ANY], 0);
+                // electron.SetJointKp(electron.joint[ANY], 50);
+                // electron.SetJointKi(electron.joint[ANY], 0.8);
+                // electron.SetJointKd(electron.joint[ANY], 600);
+                // electron.SetJointTorqueLimit(electron.joint[ANY], 1);
+                // electron.SetJointEnable(electron.joint[ANY], true);
+        };*/
 
         joint[5] = JointStatus_t{ // Right arm pitch
             10,
@@ -138,6 +214,25 @@ public:
         volatile uint32_t rxDataOffset = 0;
     };
     UsbBuffer_t usbBuffer;
+
+    struct ElectronBotJointStatus_t
+    {
+        uint8_t id;
+        float angleMin;
+        float angleMax;
+        float angle;
+        float modelAngelMin;
+        float modelAngelMax;
+        bool  inverted = false;
+        float initAngle;
+        float torqueLimit;
+        float kp;
+        float ki;
+        float kv;
+        float kd;
+        bool enable;  //舵机使能
+    };
+    ElectronBotJointStatus_t ElectronBotjoint[7];
 
 
     struct JointStatus_t

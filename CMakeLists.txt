@@ -58,6 +58,7 @@ include_directories(
         Drivers/CMSIS/Device/ST/STM32F4xx/Include
         Drivers/CMSIS/Include USB_DEVICE/App
         USB_DEVICE/Target
+        USB_DEVICE/App
         Middlewares/ST/STM32_USB_Device_Library/Core/Inc
         Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc
         Middlewares/Third_Party/FreeRTOS/Source/include
