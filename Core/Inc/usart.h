@@ -44,6 +44,7 @@ void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN Prototypes */
 extern void (*OnRecvEnd)(uint8_t *data, uint16_t len);
 void Uart_SetRxCpltCallBack(void(*xerc)(uint8_t *, uint16_t));
+void MX_USART1_UART_Init(void);
 /* USER CODE END Prototypes */
 
 #ifdef __cplusplus

@@ -215,26 +215,6 @@ public:
     };
     UsbBuffer_t usbBuffer;
 
-    struct ElectronBotJointStatus_t
-    {
-        uint8_t id;
-        float angleMin;
-        float angleMax;
-        float angle;
-        float modelAngelMin;
-        float modelAngelMax;
-        bool  inverted = false;
-        float initAngle;
-        float torqueLimit;
-        float kp;
-        float ki;
-        float kv;
-        float kd;
-        bool enable;  //舵机使能
-    };
-    ElectronBotJointStatus_t ElectronBotjoint[7];
-
-
     struct JointStatus_t
     {
         uint8_t id;
