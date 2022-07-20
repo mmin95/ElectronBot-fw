@@ -116,17 +116,217 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 #include "common_inc.h"
 #include "screen.h"
 #include "robot.h"
+#include "stm32f4xx_hal_uart.h"
+#include "stm32f4xx_hal_flash_ex.h"
+#include "user_flash.h"
+#include "usart.h"
+#include "stdio.h"
+#include "string.h"
+#include "stdlib.h"
+#include "user_flash.h"
 
 
 Robot electron(&hspi1, &hi2c1);
 float jointSetPoints[6];
 bool isEnabled = false;
+uint8_t testuart[]={"testuart"};
+
+int fputc(int ch,FILE *f)
+{
+    uint8_t temp[1] = {(uint8_t)ch};
+    //HAL_UART_Transmit(&huart2, temp, 1, 2);
+    HAL_UART_Transmit(&huart1,temp, 1,2);
+    return ch;
+}
+
+
+#define Framehead  0xea
+#define Frametail  0xea
+
+#define CMD_SetAlljointStatus  0x01
+#define CMD_GetAlljointStatus  0x02
+#define CMD_SetjointID         0x03
+
+uint8_t rxbuf[256]={0};
+uint8_t txbuf[256]={0};
+
+
+#define FLASH_JointStatusData 0x080f0000
+
+
+struct ElectronBotJointStatus_t
+{
+    uint8_t id;
+    float angleMin;
+    float angleMax;
+    float angle;
+    float modelAngelMin;
+    float modelAngelMax;
+    bool  inverted = false;
+    float initAngle;
+    float torqueLimit;
+    float kp;
+    float ki;
+    float kv;
+    float kd;
+    bool enable;  //舵机使能
+};
+ElectronBotJointStatus_t ElectronBotjoint[6];
+
+
+struct JointStatus_t
+{
+    uint8_t id;
+    float angleMin;
+    float angleMax;
+    float angle;
+    float modelAngelMin;
+    float modelAngelMax;
+    bool inverted = false;
+};
+JointStatus_t joint[7];
+
+uint8_t CheckSum(uint8_t *buf,uint16_t dataAreaLen)
+{
+    uint16_t i=0,checkLen=0;
+    uint8_t *checkBuf;
+    uint8_t checkValue=0;
+    uint32_t sum=0;
+
+    checkBuf=&buf[1];
+    checkLen=dataAreaLen+8;
+    //i=dataAreaLen+8;
+    for(i=0;i<checkLen;i++)
+    {
+        sum=sum+checkBuf[i];
+    }
+    checkValue=sum%256;
+    return checkValue;
+}
+
+//DataResolution()
+//{
+
+//}
+
+struct ProtocolItem_t{
+    uint32_t ElectronBotID;
+    uint8_t  cmd;
+    uint8_t  jointID;
+    uint16_t dataLen;
+    uint8_t  *data;
+    bool    SaveEn;
+} ;
+ProtocolItem_t ProtocolItem;
+
+/*
+void CompositeDataFrame()
+{
+
+}*/
+
+void SaveJointStatusToFalsh(uint8_t *buf ,uint16_t len)
+{
+
+}
+
+void BufClear(uint8_t *buf,uint8_t value,uint16_t len)
+{
+    memset(buf,value,len);
+}
+
+void ProtocolProcessing(uint8_t *buf)
+{
+    ElectronBotJointStatus_t rx,local,*p;
+    //ElectronBotJointStatus_t *p;
+
+    p=&rx;
+    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+    p=&local;
+    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+
+    uint8_t idbuf=0;
+    ProtocolItem.ElectronBotID=buf[1]*256*256*256*256+buf[2]*256*256*256+buf[3]*256*256+buf[4]*256;
+    ProtocolItem.cmd=buf[5];
+    ProtocolItem.jointID=buf[6];
+    ProtocolItem.dataLen=buf[7]*256+buf[8];
+    ProtocolItem.data=&buf[9];
+
+    ProtocolItem.SaveEn=false;
+
+    idbuf=ProtocolItem.jointID/2;
+    memcpy(&local,&ElectronBotjoint[idbuf],sizeof(ElectronBotJointStatus_t));
+
+    if(ProtocolItem.cmd == CMD_SetAlljointStatus )
+    {
+        memcpy(&rx,ProtocolItem.data,sizeof(ElectronBotJointStatus_t));
+        if(rx.angleMin!=local.angleMin)
+        {
+            electron.joint[idbuf].angleMin=rx.angleMin;
+            ProtocolItem.SaveEn = true;
+        }
+
+        if(rx.angleMin!=local.angleMin)
+        {
+
+        }
+
+        if(rx.kp!=local.kp)
+        {
+            electron.SetJointKp(electron.joint[ProtocolItem.jointID/2],rx.kp);
+            local.kp=rx.kp;
+            ProtocolItem.SaveEn = true;
+        }
+    }
+
+    if(ProtocolItem.SaveEn == true)
+    {
+        memcpy(&ElectronBotjoint[idbuf],&local,sizeof(ElectronBotJointStatus_t));
+       // SaveJointStatusToFalsh(&ElectronBotjoint,sizeof(ElectronBotJointStatus_t)*6);
+    }
+    //BufClear(rx,0,sizeof(rxbuf));
+}
+
+
+void ProtocolLookUp(uint8_t *buf,uint16_t len)
+{
+    uint16_t i;
+    uint16_t datalen=0;
+    uint8_t checkValue=0;
+    if(len<11)
+    {
+        return ;
+    }
+    for(i=0;i<len;i++)
+    {
+        if(buf[i]==Framehead && len-i>=11)
+        {
+            datalen=buf[i+7]*256+buf[i+8];
+            if(buf[i+7+2+datalen+2]==Frametail)
+            {
+                checkValue=buf[i+7+2+datalen+1];
+                if(checkValue==CheckSum(&buf[i],datalen))
+                {
+                    memcpy(rxbuf,&buf[i],7+2+datalen+2);
+                    ProtocolProcessing(rxbuf);
+                }
+            }
+        }
+    }
+}
+
 
 void Main(void)
 {
+    MX_USART1_UART_Init();
     HAL_Delay(2000);
     electron.lcd->Init(Screen::DEGREE_0);
     electron.lcd->SetWindow(0, 239, 0, 239);
+    //HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout);
+    //HAL_UART_Transmit(&huart1,&testuart[0], sizeof(testuart),50);
+    HAL_UART_Transmit(&huart1,testuart, sizeof(testuart),50);
+    HAL_Delay(200);
+    printf("printf:%s",testuart);
 
 #if 1
     // 0.先只连接一个舵机,不设置地址，测试硬件和舵机固件是否OK。
