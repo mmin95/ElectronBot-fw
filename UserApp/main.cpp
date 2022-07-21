@@ -151,7 +151,7 @@ uint8_t rxbuf[256]={0};
 uint8_t txbuf[256]={0};
 
 
-#define FLASH_JointStatusData 0x080f0000
+#define FLASH_JointStatusData ADDR_FLASH_SECTOR_11
 
 
 struct ElectronBotJointStatus_t
@@ -227,12 +227,66 @@ void CompositeDataFrame()
 
 void SaveJointStatusToFalsh(uint8_t *buf ,uint16_t len)
 {
-
+    //STMFLASH_Write(uint32_t WriteAddr, uint32_t *pBuffer, uint32_t NumToWrite)
+    STMFLASH_Write(FLASH_JointStatusData, (uint32_t *)buf,len);
 }
+
+void ReadJointStatusFromFalsh(uint8_t *buf ,uint16_t len)
+{
+    //STMFLASH_Write(uint32_t WriteAddr, uint32_t *pBuffer, uint32_t NumToWrite)
+    //STMFLASH_Write(FLASH_JointStatusData, (uint32_t *)buf,len);
+    //STMFLASH_Read(uint32_t ReadAddr, uint32_t *pBuffer, uint32_t NumToRead);
+    STMFLASH_Read(FLASH_JointStatusData,(uint32_t *)buf,len);
+}
+
 
 void BufClear(uint8_t *buf,uint8_t value,uint16_t len)
 {
     memset(buf,value,len);
+}
+
+
+void testDataSaveToFlash()
+{
+    ElectronBotJointStatus_t rx,local,*p;
+    p=&rx;
+    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+    p=&local;
+    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+
+    rx.angleMin=10;
+    rx.angleMax=30;
+    rx.angle=0;
+    rx.modelAngelMin=12;
+    rx.modelAngelMax=32;
+    rx.inverted=true;
+    rx.initAngle=15;
+    rx.torqueLimit=0.5;
+    rx.kp=20;
+    rx.ki=1;
+    rx.kv=2;
+    rx.kd=3;
+    rx.enable=true;
+
+    p=&rx;
+    SaveJointStatusToFalsh((uint8_t *)p,sizeof(ElectronBotJointStatus_t));
+
+    p=&local;
+    ReadJointStatusFromFalsh((uint8_t *)p,sizeof(ElectronBotJointStatus_t));
+
+    printf("angleMin=:%f\n",local.angleMin);
+    printf("angleMax=:%f\n",local.angleMax);
+    printf("angle=:%f\n",local.angle);
+    printf("modelAngelMin=:%f\n",local.modelAngelMin);
+    printf("modelAngelMax=:%f\n",local.modelAngelMax);
+    printf("inverted=:%f\n",local.inverted);
+    printf("initAngle=:%f\n",local.initAngle);
+    printf("torqueLimit=:%f\n",local.torqueLimit);
+    printf("kp=:%f\n",local.kp);
+    printf("ki=:%f\n",local.ki);
+    printf("kv=:%f\n",local.kv);
+    printf("kd=:%f\n",local.kd);
+    printf("enable=:%f\n",local.enable);
 }
 
 void ProtocolProcessing(uint8_t *buf)
@@ -282,9 +336,11 @@ void ProtocolProcessing(uint8_t *buf)
     if(ProtocolItem.SaveEn == true)
     {
         memcpy(&ElectronBotjoint[idbuf],&local,sizeof(ElectronBotJointStatus_t));
-       // SaveJointStatusToFalsh(&ElectronBotjoint,sizeof(ElectronBotJointStatus_t)*6);
+        //p=&ElectronBotjoint[0];
+        p=ElectronBotjoint;
+        SaveJointStatusToFalsh((uint8_t *)p,sizeof(ElectronBotJointStatus_t)*6);
     }
-    //BufClear(rx,0,sizeof(rxbuf));
+    BufClear(rxbuf,0,sizeof(rxbuf));
 }
 
 
@@ -326,14 +382,15 @@ void Main(void)
     //HAL_UART_Transmit(&huart1,&testuart[0], sizeof(testuart),50);
     HAL_UART_Transmit(&huart1,testuart, sizeof(testuart),50);
     HAL_Delay(200);
-    printf("printf:%s",testuart);
+    printf("printf:%s/n",testuart);
+    testDataSaveToFlash();
 
 #if 1
     // 0.先只连接一个舵机,不设置地址，测试硬件和舵机固件是否OK。
 
     // 1.确保广播Joint的变量正确，直接更新 UpdateJointAngle
     //   可能会因为角度不在变量范围内不发送指令。（请详细读代码）
-    electron.joint[0].id = 2;
+    electron.joint[0].id = 12;
     electron.joint[0].angleMax = 180;
     electron.joint[0].angle = 0;
     electron.joint[0].modelAngelMin = -90;
