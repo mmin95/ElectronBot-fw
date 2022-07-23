@@ -1,5 +1,7 @@
-#ifndef __USER_FLASH_H
-#define __USER_FLASH_H
+//#ifndef __USER_FLASH_H
+//#define __USER_FLASH_H
+/*
+
 #include "main.h"
 
 #define BOARD_NUM_ADDR 0x0800C000
@@ -24,4 +26,6 @@
 uint32_t STMFLASH_ReadWord(uint32_t faddr);                                      //读出字
 void STMFLASH_Write(uint32_t WriteAddr, uint32_t *pBuffer, uint32_t NumToWrite); //从指定地址开始写入指定长度的数据
 void STMFLASH_Read(uint32_t ReadAddr, uint32_t *pBuffer, uint32_t NumToRead);    //从指定地址开始读出指定长度的数据
-#endif /*__USER_FLASH_H*/
+
+*/
+//#endif /*__USER_FLASH_H*/

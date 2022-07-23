@@ -1,7 +1,7 @@
 #THIS FILE IS AUTO GENERATED FROM THE TEMPLATE! DO NOT CHANGE!
 set(CMAKE_SYSTEM_NAME Generic)
 set(CMAKE_SYSTEM_VERSION 1)
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.19.4)
 
 # specify cross compilers and tools
 set(CMAKE_C_COMPILER arm-none-eabi-gcc)
@@ -64,9 +64,9 @@ include_directories(
         Middlewares/Third_Party/FreeRTOS/Source/include
         Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2
         Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
+        Flash
         Bsp
-        UserApp
-)
+        UserApp)
 
 add_definitions(-DUSE_HAL_DRIVER -DSTM32F405xx)
 
@@ -76,19 +76,22 @@ file(GLOB_RECURSE SOURCES
         "startup/*.*"
         "Drivers/*.*"
         "Core/*.*"
+        "Flash/*.*"
         "Bsp/*.*"
-        "UserApp/*.*"
-        )
+        "UserApp/*.*")
 
+#set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F405RGTx_FLASH.ld UserApp/user_flash.c UserApp/user_flash.h)
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F405RGTx_FLASH.ld)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m4 -mthumb -mthumb-interwork)
 add_link_options(-T ${LINKER_SCRIPT})
 
+
 link_directories("Drivers/CMSIS/Lib")
 link_libraries("arm_cortexM4lf_math.a")
 
+#add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT} UserApp/user_flash.c UserApp/user_flash.h)
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)

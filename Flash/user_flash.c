@@ -1,9 +1,10 @@
-#include "user_flash.h"
+//#include "user_flash.h"
 /**------------------------------------------
   * @brief  Gets the sector of a given address
   * @param  Address: Flash address
   * @retval The sector of a given address
   --------------------------------------------*/
+ /*
 uint8_t STMFLASH_GetFlashSector(uint32_t addr)
 {
     if (addr < ADDR_FLASH_SECTOR_1)
@@ -95,3 +96,6 @@ void STMFLASH_Read(uint32_t ReadAddr, uint32_t *pBuffer, uint32_t size)
         ReadAddr += 4;                            //偏移4个字节.
     }
 }
+
+
+*/
