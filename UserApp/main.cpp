@@ -123,128 +123,11 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 #include "stdio.h"
 #include "string.h"
 #include "stdlib.h"
+#include "protocol.h"
+#include "flash.h"
 
 
-#define BOARD_NUM_ADDR 0x0800C000
 
-#define STM32_FLASH_BASE 0x08000000 //STM32 FLASH的起始地址
-#define FLASH_WAITETIME 50000       //FLASH等待超时时间
-
-//FLASH 扇区的起始地址
-#define ADDR_FLASH_SECTOR_0 ((uint32_t)0x08000000)  //扇区0起始地址, 16 Kbytes
-#define ADDR_FLASH_SECTOR_1 ((uint32_t)0x08004000)  //扇区1起始地址, 16 Kbytes
-#define ADDR_FLASH_SECTOR_2 ((uint32_t)0x08008000)  //扇区2起始地址, 16 Kbytes
-#define ADDR_FLASH_SECTOR_3 ((uint32_t)0x0800C000)  //扇区3起始地址, 16 Kbytes
-#define ADDR_FLASH_SECTOR_4 ((uint32_t)0x08010000)  //扇区4起始地址, 64 Kbytes
-#define ADDR_FLASH_SECTOR_5 ((uint32_t)0x08020000)  //扇区5起始地址, 128 Kbytes
-#define ADDR_FLASH_SECTOR_6 ((uint32_t)0x08040000)  //扇区6起始地址, 128 Kbytes
-#define ADDR_FLASH_SECTOR_7 ((uint32_t)0x08060000)  //扇区7起始地址, 128 Kbytes
-#define ADDR_FLASH_SECTOR_8 ((uint32_t)0x08080000)  //扇区8起始地址, 128 Kbytes
-#define ADDR_FLASH_SECTOR_9 ((uint32_t)0x080A0000)  //扇区9起始地址, 128 Kbytes
-#define ADDR_FLASH_SECTOR_10 ((uint32_t)0x080C0000) //扇区10起始地址,128 Kbytes
-#define ADDR_FLASH_SECTOR_11 ((uint32_t)0x080E0000) //扇区11起始地址,128 Kbytes
-
-uint32_t STMFLASH_ReadWord(uint32_t faddr);                                      //读出字
-void STMFLASH_Write(uint32_t WriteAddr, uint32_t *pBuffer, uint32_t NumToWrite); //从指定地址开始写入指定长度的数据
-void STMFLASH_Read(uint32_t ReadAddr, uint32_t *pBuffer, uint32_t NumToRead);    //从指定地址开始读出指定长度的数据
-
-
-/**------------------------------------------
-  * @brief  Gets the sector of a given address
-  * @param  Address: Flash address
-  * @retval The sector of a given address
-  --------------------------------------------*/
-uint8_t STMFLASH_GetFlashSector(uint32_t addr)
-{
-    if (addr < ADDR_FLASH_SECTOR_1)
-        return FLASH_SECTOR_0;
-    else if (addr < ADDR_FLASH_SECTOR_2)
-        return FLASH_SECTOR_1;
-    else if (addr < ADDR_FLASH_SECTOR_3)
-        return FLASH_SECTOR_2;
-    else if (addr < ADDR_FLASH_SECTOR_4)
-        return FLASH_SECTOR_3;
-    else if (addr < ADDR_FLASH_SECTOR_5)
-        return FLASH_SECTOR_4;
-    else if (addr < ADDR_FLASH_SECTOR_6)
-        return FLASH_SECTOR_5;
-    else if (addr < ADDR_FLASH_SECTOR_7)
-        return FLASH_SECTOR_6;
-    else if (addr < ADDR_FLASH_SECTOR_8)
-        return FLASH_SECTOR_7;
-    else if (addr < ADDR_FLASH_SECTOR_9)
-        return FLASH_SECTOR_8;
-    else if (addr < ADDR_FLASH_SECTOR_10)
-        return FLASH_SECTOR_9;
-    else if (addr < ADDR_FLASH_SECTOR_11)
-        return FLASH_SECTOR_10;
-    return FLASH_SECTOR_11;
-}
-
-uint32_t STMFLASH_ReadWord(uint32_t faddr)
-{
-    return *(__IO uint32_t *)faddr;
-}
-
-void STMFLASH_Write(uint32_t WriteAddr, uint32_t *pBuffer, uint32_t Num)
-{
-    FLASH_EraseInitTypeDef FlashEraseInit;
-    HAL_StatusTypeDef FlashStatus = HAL_OK;
-    uint32_t SectorError = 0;
-    uint32_t addrx = 0;
-    uint32_t endaddr = 0;
-    if (WriteAddr < STM32_FLASH_BASE || WriteAddr % 4)
-        return; //非法地址
-
-    HAL_FLASH_Unlock();            //解锁
-    addrx = WriteAddr;             //写入的起始地址
-    endaddr = WriteAddr + Num * 4; //写入的结束地址
-
-    if (addrx < 0X080C1000)
-    {
-        while (addrx < endaddr)
-        {
-            if (STMFLASH_ReadWord(addrx) != 0XFFFFFFFF)
-            {
-                FlashEraseInit.TypeErase = FLASH_TYPEERASE_SECTORS;     //擦除类型，扇区擦除
-                FlashEraseInit.Sector = STMFLASH_GetFlashSector(addrx); //要擦除的扇区
-                FlashEraseInit.NbSectors = 1;                           //一次只擦除一个扇区
-                FlashEraseInit.VoltageRange = FLASH_VOLTAGE_RANGE_3;    //电压范围，VCC=2.7~3.6V之间!!
-                if (HAL_FLASHEx_Erase(&FlashEraseInit, &SectorError) != HAL_OK)
-                {
-                    break; //发生错误了
-                }
-            }
-            else
-                addrx += 4;
-            FLASH_WaitForLastOperation(FLASH_WAITETIME); //等待上次操作完成
-        }
-    }
-    FlashStatus = FLASH_WaitForLastOperation(FLASH_WAITETIME); //等待上次操作完成
-    if (FlashStatus == HAL_OK)
-    {
-        while (WriteAddr < endaddr) //写数据
-        {
-            if (HAL_FLASH_Program(FLASH_TYPEPROGRAM_WORD, WriteAddr, *pBuffer) != HAL_OK) //写入数据
-            {
-                break; //写入异常
-            }
-            WriteAddr += 4;
-            pBuffer++;
-        }
-    }
-    HAL_FLASH_Lock(); //上锁
-}
-
-void STMFLASH_Read(uint32_t ReadAddr, uint32_t *pBuffer, uint32_t size)
-{
-    uint32_t i;
-    for (i = 0; i < size; i++)
-    {
-        pBuffer[i] = STMFLASH_ReadWord(ReadAddr); //读取4个字节.
-        ReadAddr += 4;                            //偏移4个字节.
-    }
-}
 
 
 
@@ -253,32 +136,35 @@ float jointSetPoints[6];
 bool isEnabled = false;
 uint8_t testuart[]={"testuart"};
 
+/*
 int fputc(int ch,FILE *f)
 {
     uint8_t temp[1] = {(uint8_t)ch};
     //HAL_UART_Transmit(&huart2, temp, 1, 2);
     HAL_UART_Transmit(&huart1,temp, 1,10);
     return ch;
-}
+}*/
 
+/*
+#define FrameHead  0xea
+#define FrameTail  0xea
 
-#define Framehead  0xea
-#define Frametail  0xea
+#define CMD_SetAllJointStatus  0x01
+#define CMD_GetAllJointStatus  0x02
+#define CMD_SetJointID         0x03
+#define CMD_SetElectronBotID   0x04
+#define CMD_GetElectronBotID   0x05
 
-#define CMD_SetAlljointStatus  0x01
-#define CMD_GetAlljointStatus  0x02
-#define CMD_SetjointID         0x03
-
-uint8_t rxbuf[256]={0};
-uint8_t txbuf[256]={0};
+//uint8_t rxbuf[256]={0};
+//uint8_t txbuf[256]={0};
 
 
 #define FLASH_JointStatusData ADDR_FLASH_SECTOR_11
 
-
-struct ElectronBotJointStatus_t
+// uint8_t id;
+struct
+ElectronBotJointStatus_t
 {
-    uint8_t id;
     float angleMin;
     float angleMax;
     float angle;
@@ -308,44 +194,43 @@ struct JointStatus_t
 };
 JointStatus_t joint[7];
 
-uint8_t CheckSum(uint8_t *buf,uint16_t dataAreaLen)
+uint8_t CheckSum(uint8_t* buf, uint16_t dataAreaLen)
 {
-    uint16_t i=0,checkLen=0;
-    uint8_t *checkBuf;
-    uint8_t checkValue=0;
-    uint32_t sum=0;
+    uint16_t i = 0, checkLen = 0;
+    uint8_t* checkBuf;
+    uint8_t checkValue = 0;
+    uint32_t sum = 0;
 
-    checkBuf=&buf[1];
-    checkLen=dataAreaLen+8;
+    checkBuf = &buf[1];
+    checkLen = dataAreaLen + 8;
     //i=dataAreaLen+8;
-    for(i=0;i<checkLen;i++)
+    for (i = 0; i < checkLen; i++)
     {
-        sum=sum+checkBuf[i];
+        sum = sum + checkBuf[i];
     }
-    checkValue=sum%256;
+    checkValue = sum % 256;
     return checkValue;
 }
+
+
+
 
 //DataResolution()
 //{
 
 //}
-
+enum CmdOrResFrame{CommandFrame,ResponseFrame};
 struct ProtocolItem_t{
     uint32_t ElectronBotID;
     uint8_t  cmd;
     uint8_t  jointID;
     uint16_t dataLen;
     uint8_t  *data;
+
+    CmdOrResFrame frame;
     bool    SaveEn;
 } ;
 ProtocolItem_t ProtocolItem;
-
-/*
-void CompositeDataFrame()
-{
-
-}*/
 
 void SaveJointStatusToFlash(uint8_t *buf ,uint16_t len)
 {
@@ -370,100 +255,183 @@ void BufClear(uint8_t *buf,uint8_t value,uint16_t len)
 
 void myprintf(const char *format,...)
 {
-    /*char str[80];
-    sprintf(str,format);
-    HAL_UART_Transmit(&huart1,(uint8_t *)str, strlen(str),10);*/
+    //char str[80];
+    //sprintf(str,format);
+    //HAL_UART_Transmit(&huart1,(uint8_t *)str, strlen(str),10);
     printf(format);
 }
 
-int testDataSaveToFlash()
+
+struct txbuf_t{
+    uint16_t dataLen;
+    uint8_t buf[300];
+};
+txbuf_t txbuf;
+
+struct rxbuf_t{
+    uint16_t dataLen;
+    uint16_t frameHead;
+    uint8_t buf[300];
+};
+rxbuf_t rxbuf;
+
+
+//void AssemblyProtocolFrame(ProtocolItem_t * items,bool cmd)
+void AssemblyProtocolFrame(ProtocolItem_t * items)
 {
-    ElectronBotJointStatus_t rx,local,*p;
-    uint8_t buf[200]={0};
-    p=&rx;
-    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
-    p=&local;
-    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+    uint16_t len=0,itemLen=0;
+    uint8_t checkValue=0;
 
-    rx.angleMin=10;
-    rx.angleMax=30;
-    rx.angle=0;
-    rx.modelAngelMin=12;
-    rx.modelAngelMax=32;
-    rx.inverted=true;
-    rx.initAngle=15;
-    rx.torqueLimit=0.5;
-    rx.kp=20;
-    rx.ki=1;
-    rx.kv=2;
-    rx.kd=3;
-    rx.enable=true;
+    txbuf.buf[0]=FrameHead;
+    len++;
 
-    p=&rx;
-    SaveJointStatusToFlash((uint8_t *)p,sizeof(ElectronBotJointStatus_t));
-    HAL_Delay(500);
-    p=&local;
-    ReadJointStatusFromFlash((uint8_t *)buf,sizeof(ElectronBotJointStatus_t));
-    memcpy(&local,buf,sizeof(ElectronBotJointStatus_t));
-    //HAL_Delay(500);
+    itemLen=sizeof(items->ElectronBotID);
+    memcpy(&txbuf.buf[len],&items->ElectronBotID,itemLen);
+    len+=itemLen;
 
-   // myprintf("angleMin=%f\r\n",local.angleMin);
-    myprintf("angleMin=%f\r\n",local.angleMin);
-    //char str[80];
-   // smyprintf(str,"angleMin=%f\r\n",local.angleMin);
-   // HAL_UART_Transmit(&huart1,(uint8_t *)str, strlen(str),10);
+    if(items->frame == ResponseFrame)
+    {
+        items->cmd=items->cmd|0x80;
+    }
+    itemLen = sizeof(items->cmd);
+    memcpy(&txbuf.buf[len],&items->cmd,itemLen);
+    len+=itemLen;
 
-    HAL_Delay(200);
-    myprintf("angleMax=%f\r\n",local.angleMax);
-    HAL_Delay(200);
-    myprintf("angle=%f\r\n",local.angle);
-    HAL_Delay(200);
-    myprintf("modelAngelMin=%f\r\n",local.modelAngelMin);
-    HAL_Delay(200);
-    myprintf("modelAngelMax=%f\r\n",local.modelAngelMax);
-    HAL_Delay(200);
-    myprintf("inverted=%d\r\n",local.inverted);
-    HAL_Delay(200);
-    myprintf("initAngle=%f\r\n",local.initAngle);
-    HAL_Delay(200);
-    myprintf("torqueLimit=%f\r\n",local.torqueLimit);
-    HAL_Delay(200);
-    myprintf("kp=%f\r\n",local.kp);
-    HAL_Delay(200);
-    myprintf("ki=%f\r\n",local.ki);
-    HAL_Delay(200);
-    myprintf("kv=%f\r\n",local.kv);
-    HAL_Delay(200);
-    myprintf("kd=%f\r\n",local.kd);
-    HAL_Delay(200);
-    myprintf("enable=%d\r\n",local.enable);
-    //HAL_Delay(200);
-    return 0;
+    itemLen=sizeof(items->jointID);
+    memcpy(&txbuf.buf[len],&items->jointID,itemLen);
+    len+=itemLen;
+
+    itemLen=sizeof(items->dataLen);
+    memcpy(&txbuf.buf[len],&items->dataLen,itemLen);
+    len+=itemLen;
+
+    //itemLen=sizeof(items->dataLen);
+    if(items->dataLen>0)
+    {
+        memcpy(&txbuf.buf[len], items->data, items->dataLen);
+        len += items->dataLen;
+    }
+
+    checkValue=CheckSum((uint8_t *)&txbuf.buf[0],items->dataLen);
+    txbuf.buf[len]=checkValue;
+    len++;
+
+    txbuf.buf[len]=FrameTail;
+    len++;
+    txbuf.dataLen=len;
+   // memcpy(txbuf,&items->ElectronBotID,sizeof(items->ElectronBotID));
 }
 
-void ProtocolProcessing(uint8_t *buf)
+
+
+void ComposeProtocolFrame(uint8_t* buf ,uint16_t *dataLen, ProtocolItem_t* items)
 {
-    ElectronBotJointStatus_t rx,local,*p;
+    uint16_t len = 0, itemLen = 0;
+    uint8_t checkValue = 0;
+
+    buf[0] = FrameHead;
+    len++;
+
+    itemLen = sizeof(items->ElectronBotID);
+    memcpy(&buf[len], &items->ElectronBotID, itemLen);
+    len += itemLen;
+
+    if (items->frame == ResponseFrame)
+    {
+        items->cmd = items->cmd | 0x80;
+    }
+    itemLen = sizeof(items->cmd);
+    memcpy(&buf[len], &items->cmd, itemLen);
+    len += itemLen;
+
+    itemLen = sizeof(items->jointID);
+    memcpy(&buf[len], &items->jointID, itemLen);
+    len += itemLen;
+
+    itemLen = sizeof(items->dataLen);
+    memcpy(&buf[len], &items->dataLen, itemLen);
+    len += itemLen;
+
+    //itemLen=sizeof(items->dataLen);
+    if (items->dataLen > 0)
+    {
+        memcpy(&buf[len], items->data, items->dataLen);
+        len += items->dataLen;
+    }
+
+    checkValue = CheckSum((uint8_t*)&txbuf.buf[0], items->dataLen);
+    buf[len] = checkValue;
+    len++;
+
+    buf[len] = FrameTail;
+    len++;
+
+    *dataLen = len;
+    // memcpy(txbuf,&items->ElectronBotID,sizeof(items->ElectronBotID));
+}
+
+bool ProtocolLookUp(uint8_t* outBuf, uint16_t *outFrameHead, uint8_t* inBuf, uint16_t inLen)
+{
+    uint16_t i;
+    uint16_t datalen=0;
+    uint8_t checkValue=0;
+    if(inLen<11)
+    {
+        return false;
+    }
+    for(i=0;i<inLen;i++)
+    {
+        if(inBuf[i]==FrameHead && inLen-i>=11)
+        {
+            datalen=inBuf[i+7]+inBuf[i+8]*256;
+            if(inBuf[i+7+2+datalen+2-1]==FrameTail)
+            {
+                checkValue=inBuf[i+7+2+datalen+1-1];
+                if(checkValue==CheckSum(&inBuf[i],datalen))
+                {
+                    memcpy(outBuf,&inBuf[i],7+2+datalen+2);
+                    *outFrameHead=i;
+                    return true;
+                   // ProtocolProcessing(rxbuf);
+                }
+            }
+        }
+    }
+    return false;
+}
+
+
+void ProtocolProcessing(uint8_t *inbuf, uint16_t len)
+{
+
     //ElectronBotJointStatus_t *p;
 
+    if(ProtocolLookUp(rxbuf.buf,&rxbuf.frameHead,inbuf,len)== false)
+    {
+        return;
+    }
+
+    ElectronBotJointStatus_t rx,local,*p;
     p=&rx;
     BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
     p=&local;
     BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
 
     uint8_t idbuf=0;
-    ProtocolItem.ElectronBotID=buf[1]*256*256*256*256+buf[2]*256*256*256+buf[3]*256*256+buf[4]*256;
+    uint8_t *buf;
+    buf=&rxbuf.buf[rxbuf.frameHead];
+
+    ProtocolItem.ElectronBotID=buf[1]+buf[2]*256+buf[3]*256*256+buf[4]*256*256*256;
     ProtocolItem.cmd=buf[5];
     ProtocolItem.jointID=buf[6];
-    ProtocolItem.dataLen=buf[7]*256+buf[8];
+    ProtocolItem.dataLen=buf[7]+buf[8]*256;
     ProtocolItem.data=&buf[9];
-
     ProtocolItem.SaveEn=false;
 
     idbuf=ProtocolItem.jointID/2;
     memcpy(&local,&ElectronBotjoint[idbuf],sizeof(ElectronBotJointStatus_t));
 
-    if(ProtocolItem.cmd == CMD_SetAlljointStatus )
+    if(ProtocolItem.cmd == CMD_SetAllJointStatus )
     {
         memcpy(&rx,ProtocolItem.data,sizeof(ElectronBotJointStatus_t));
         if(rx.angleMin!=local.angleMin)
@@ -511,7 +479,8 @@ void ProtocolProcessing(uint8_t *buf)
 
         if(rx.initAngle!=local.initAngle)
         {
-            electron.SetJointInitAngle(electron.joint[idbuf], rx.initAngle);
+           // electron.SetJointInitAngle(electron.joint[idbuf], rx.initAngle);
+            HAL_Delay(20);
             local.initAngle=rx.initAngle;
             ProtocolItem.SaveEn = true;
         }
@@ -519,6 +488,7 @@ void ProtocolProcessing(uint8_t *buf)
         if(rx.torqueLimit!=local.torqueLimit)
         {
             electron.SetJointTorqueLimit(electron.joint[idbuf], rx.torqueLimit);
+            HAL_Delay(20);
             local.torqueLimit=rx.torqueLimit;
             ProtocolItem.SaveEn = true;
         }
@@ -526,6 +496,7 @@ void ProtocolProcessing(uint8_t *buf)
         if(rx.kp!=local.kp)
         {
             electron.SetJointKp(electron.joint[idbuf],rx.kp);
+            HAL_Delay(20);
             local.kp=rx.kp;
             ProtocolItem.SaveEn = true;
         }
@@ -533,6 +504,7 @@ void ProtocolProcessing(uint8_t *buf)
         if(rx.ki!=local.ki)
         {
             electron.SetJointKi(electron.joint[idbuf],rx.ki);
+            HAL_Delay(20);
             local.ki=rx.kp;
             ProtocolItem.SaveEn = true;
         }
@@ -540,6 +512,7 @@ void ProtocolProcessing(uint8_t *buf)
         if(rx.kv!=local.kv)
         {
             electron.SetJointKv(electron.joint[idbuf],rx.kv);
+            HAL_Delay(20);
             local.kv=rx.kv;
             ProtocolItem.SaveEn = true;
         }
@@ -547,83 +520,250 @@ void ProtocolProcessing(uint8_t *buf)
         if(rx.kd!=local.kd)
         {
             electron.SetJointKd(electron.joint[idbuf],rx.kd);
+            HAL_Delay(20);
             local.kd=rx.kd;
             ProtocolItem.SaveEn = true;
         }
 
-
         if(rx.enable!=local.enable)
         {
             electron.SetJointEnable(electron.joint[idbuf],rx.enable);
+            HAL_Delay(20);
             local.enable=rx.enable;
             ProtocolItem.SaveEn = true;
         }
-    }
 
-    if(ProtocolItem.SaveEn == true)
-    {
-        memcpy(&ElectronBotjoint[idbuf],&local,sizeof(ElectronBotJointStatus_t));
-        //p=&ElectronBotjoint[0];
-        p=ElectronBotjoint;
-        SaveJointStatusToFlash((uint8_t *)p,sizeof(ElectronBotJointStatus_t)*6);
-    }
-    
-    BufClear(rxbuf,0,sizeof(rxbuf));
-}
-
-
-void ProtocolLookUp(uint8_t *buf,uint16_t len)
-{
-    uint16_t i;
-    uint16_t datalen=0;
-    uint8_t checkValue=0;
-    if(len<11)
-    {
-        return ;
-    }
-    for(i=0;i<len;i++)
-    {
-        if(buf[i]==Framehead && len-i>=11)
+        if(ProtocolItem.SaveEn == true)
         {
-            datalen=buf[i+7]*256+buf[i+8];
-            if(buf[i+7+2+datalen+2]==Frametail)
-            {
-                checkValue=buf[i+7+2+datalen+1];
-                if(checkValue==CheckSum(&buf[i],datalen))
-                {
-                    memcpy(rxbuf,&buf[i],7+2+datalen+2);
-                    ProtocolProcessing(rxbuf);
-                }
-            }
+            memcpy(&ElectronBotjoint[idbuf],&local,sizeof(ElectronBotJointStatus_t));
+            HAL_Delay(20);
+            //p=&ElectronBotjoint[0];
+            p=ElectronBotjoint;
+            SaveJointStatusToFlash((uint8_t *)p,sizeof(ElectronBotJointStatus_t)*6);
         }
     }
+
+    BufClear((uint8_t* )&rxbuf,0,sizeof(rxbuf));
 }
 
+void testReceiveMasterUsbData(uint8_t *inbuf, uint16_t len)
+{
+    if(ProtocolLookUp(rxbuf.buf,&rxbuf.frameHead,inbuf,len)== false)
+    {
+        return;
+    }
 
+    ElectronBotJointStatus_t rx,local,*p;
+    p=&rx;
+    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+    p=&local;
+    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+
+    uint8_t idbuf=0;
+    uint8_t *buf;
+    //buf=&rxbuf.buf[rxbuf.frameHead];
+    buf=inbuf;
+
+    ProtocolItem.ElectronBotID=buf[1]+buf[2]*256+buf[3]*256*256+buf[4]*256*256*256;
+    ProtocolItem.cmd=buf[5];
+    ProtocolItem.jointID=buf[6];
+    ProtocolItem.dataLen=buf[7]+buf[8]*256;
+    ProtocolItem.data=&buf[9];
+    ProtocolItem.SaveEn=false;
+
+    idbuf=ProtocolItem.jointID/2;
+    memcpy(&local,ProtocolItem.data,sizeof(ElectronBotJointStatus_t));
+
+    myprintf("ElectronBotID=%d\r\n",ProtocolItem.ElectronBotID);
+    HAL_Delay(200);
+    myprintf("cmd=%d\r\n",ProtocolItem.cmd);
+    HAL_Delay(200);
+    myprintf("jointID=%d\r\n",ProtocolItem.jointID);
+    HAL_Delay(200);
+    myprintf("angleMin=%f\r\n",local.angleMin);
+    //char str[80];
+    // smyprintf(str,"angleMin=%f\r\n",local.angleMin);
+    // HAL_UART_Transmit(&huart1,(uint8_t *)str, strlen(str),10);
+
+    HAL_Delay(200);
+    myprintf("angleMax=%f\r\n",local.angleMax);
+    HAL_Delay(200);
+    myprintf("angle=%f\r\n",local.angle);
+    HAL_Delay(200);
+    myprintf("modelAngelMin=%f\r\n",local.modelAngelMin);
+    HAL_Delay(200);
+    myprintf("modelAngelMax=%f\r\n",local.modelAngelMax);
+    HAL_Delay(200);
+    //myprintf("inverted=%d\r\n",local.inverted);
+    myprintf("inverted=%s\r\n",local.inverted?"true" :"false");
+    HAL_Delay(200);
+    myprintf("initAngle=%f\r\n",local.initAngle);
+    HAL_Delay(200);
+    myprintf("torqueLimit=%f\r\n",local.torqueLimit);
+    HAL_Delay(200);
+    myprintf("kp=%f\r\n",local.kp);
+    HAL_Delay(200);
+    myprintf("ki=%f\r\n",local.ki);
+    HAL_Delay(200);
+    myprintf("kv=%f\r\n",local.kv);
+    HAL_Delay(200);
+    myprintf("kd=%f\r\n",local.kd);
+    HAL_Delay(200);
+    myprintf("enable=%s\r\n",local.enable?"true" :"false");
+    HAL_Delay(200);
+}
+int testDataSaveToFlash()
+{
+    ElectronBotJointStatus_t rx,local,*p;
+    uint8_t buf[200]={0};
+    p=&rx;
+    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+    p=&local;
+    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+
+    rx.angleMin=10;
+    rx.angleMax=30;
+    rx.angle=0;
+    rx.modelAngelMin=12;
+    rx.modelAngelMax=32;
+    rx.inverted=true;
+    rx.initAngle=15;
+    rx.torqueLimit=0.5;
+    rx.kp=20;
+    rx.ki=1;
+    rx.kv=2;
+    rx.kd=3;
+    rx.enable=true;
+
+    p=&rx;
+    SaveJointStatusToFlash((uint8_t *)p,sizeof(ElectronBotJointStatus_t));
+    HAL_Delay(500);
+    p=&local;
+    ReadJointStatusFromFlash((uint8_t *)buf,sizeof(ElectronBotJointStatus_t));
+    memcpy(&local,buf,sizeof(ElectronBotJointStatus_t));
+    //HAL_Delay(500);
+
+    // myprintf("angleMin=%f\r\n",local.angleMin);
+    myprintf("angleMin=%f\r\n",local.angleMin);
+    //char str[80];
+    // smyprintf(str,"angleMin=%f\r\n",local.angleMin);
+    // HAL_UART_Transmit(&huart1,(uint8_t *)str, strlen(str),10);
+
+    HAL_Delay(200);
+    myprintf("angleMax=%f\r\n",local.angleMax);
+    HAL_Delay(200);
+    myprintf("angle=%f\r\n",local.angle);
+    HAL_Delay(200);
+    myprintf("modelAngelMin=%f\r\n",local.modelAngelMin);
+    HAL_Delay(200);
+    myprintf("modelAngelMax=%f\r\n",local.modelAngelMax);
+    HAL_Delay(200);
+    //myprintf("inverted=%d\r\n",local.inverted);
+    myprintf("inverted=%s\r\n",local.inverted?"true" :"false");
+    HAL_Delay(200);
+    myprintf("initAngle=%f\r\n",local.initAngle);
+    HAL_Delay(200);
+    myprintf("torqueLimit=%f\r\n",local.torqueLimit);
+    HAL_Delay(200);
+    myprintf("kp=%f\r\n",local.kp);
+    HAL_Delay(200);
+    myprintf("ki=%f\r\n",local.ki);
+    HAL_Delay(200);
+    myprintf("kv=%f\r\n",local.kv);
+    HAL_Delay(200);
+    myprintf("kd=%f\r\n",local.kd);
+    HAL_Delay(200);
+    myprintf("enable=%s\r\n",local.enable?"true" :"false");
+    HAL_Delay(200);
+    return 0;
+}
+
+uint8_t buf[200]={0};
+void testAssemblyProtocolFrame()
+{
+    ElectronBotJointStatus_t rx,local,*p;
+
+    p=&rx;
+    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+    p=&local;
+    BufClear((uint8_t *)p,0,sizeof(ElectronBotJointStatus_t));
+
+    rx.angleMin=10;
+    rx.angleMax=30;
+    rx.angle=0;
+    rx.modelAngelMin=12;
+    rx.modelAngelMax=32;
+    rx.inverted=true;
+    rx.initAngle=15;
+    rx.torqueLimit=0.5;
+    rx.kp=20;
+    rx.ki=1;
+    rx.kv=2;
+    rx.kd=3;
+    rx.enable=true;
+
+    p=&rx;
+    memcpy((uint8_t *)buf,(uint8_t *)p,sizeof(ElectronBotJointStatus_t));
+
+    //p=&ProtocolItem;
+    ProtocolItem_t *p2;
+    p2=&ProtocolItem;
+    BufClear((uint8_t *)p2,0,sizeof(ProtocolItem_t));
+
+    ProtocolItem.ElectronBotID=0x00000000;
+    ProtocolItem.ElectronBotID=0x12345678;
+    ProtocolItem.cmd=CMD_SetAllJointStatus;
+    ProtocolItem.jointID=12;
+    ProtocolItem.dataLen=sizeof(ElectronBotJointStatus_t);
+    ProtocolItem.data=buf;
+
+    ProtocolItem.frame=CommandFrame;
+    ProtocolItem.SaveEn=false;
+
+
+    AssemblyProtocolFrame(&ProtocolItem);
+   // ProtocolLookUp(txbuf.buf,txbuf.dataLen);
+     uint8_t usbtestBUF[300]={0};
+     for(int i=0x65;i<(0x65+300);i++)
+     {
+         usbtestBUF[i]=i;
+     }
+    electron.SendUsbPacket(txbuf.buf,txbuf.dataLen+2);
+   // memset(usbtestBUF,0x65,sizeof(usbtestBUF)/2);
+   // electron.SendUsbPacket(usbtestBUF,sizeof(usbtestBUF));
+   // electron.SendUsbPacket(usbtestBUF,100);
+    ProtocolProcessing(txbuf.buf,txbuf.dataLen);
+}*/
+
+uint8_t usbTestBuf[300]={0};
+extern usbRxBuf_t usbRx;
 void Main(void)
 {
-    HAL_Delay(200);
+
+  // HAL_Delay(2000);
+  // electron.lcd->Init(Screen::DEGREE_0);00
+  // electron.lcd->SetWindow(0, 239, 0, 239);
+  // testAssemblyProtocolFrame();
+  // testDataSaveToFlash();
+    test_protocol();
+    test_flash();
     MX_USART1_UART_Init();
+    HAL_Delay(2000);
+    electron.lcd->Init(Screen::DEGREE_0);
+    electron.lcd->SetWindow(0, 239, 0, 239);
     //HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout);
     //HAL_UART_Transmit(&huart1,&testuart[0], sizeof(testuart),50);
     HAL_UART_Transmit(&huart1,testuart, sizeof(testuart),50);
     HAL_Delay(200);
-    myprintf("\r\n");
-    myprintf("myprintf:%s\r\n",testuart);
-    myprintf("\r\n");
-    //testDataSaveToFlash();
-
-    myprintf("myprintf:%s\r\n",testuart);
-    HAL_Delay(2000);
-    electron.lcd->Init(Screen::DEGREE_0);
-    electron.lcd->SetWindow(0, 239, 0, 239);
+    printf("printf:%s",testuart);
+   // testAssemblyProtocolFrame();
 
 #if 1
     // 0.先只连接一个舵机,不设置地址，测试硬件和舵机固件是否OK。
 
     // 1.确保广播Joint的变量正确，直接更新 UpdateJointAngle
     //   可能会因为角度不在变量范围内不发送指令。（请详细读代码）
-    electron.joint[0].id = 2;
+   /* electron.joint[0].id = 12;
     electron.joint[0].angleMax = 180;
     electron.joint[0].angle = 0;
     electron.joint[0].modelAngelMin = -90;
@@ -631,7 +771,11 @@ void Main(void)
 
     electron.joint[0].angleMin = 0;
     // 2.使用广播地址是能
-    electron.SetJointEnable(electron.joint[0], true);
+    electron.SetJointEnable(electron.joint[0], true);*/
+
+    for (int j = 0; j < 300; ++j) {
+        usbTestBuf[j]=j;
+    }
 
     // 3.这时候就能看到舵机做往复运动了。
     while (1)
@@ -639,14 +783,46 @@ void Main(void)
         for (int i = -15; i < 15; i += 1)
         {
             float angle = i;
-            electron.UpdateJointAngle(electron.joint[0], angle);
+            //electron.UpdateJointAngle(electron.joint[0], angle);
             HAL_Delay(20);
+          //  electron.SendUsbPacket(testuart,sizeof(testuart));
+           /* memset(usbTestBuf,0x00,sizeof(usbTestBuf));
+            usbTestBuf[0]=0x01;
+            usbTestBuf[1]=0x01;
+            usbTestBuf[2]=0x01;
+            usbTestBuf[3]=0x00;
+            usbTestBuf[4]=0x01;
+            usbTestBuf[5]=0x01;
+            usbTestBuf[6]=0x01;
+            usbTestBuf[7]=0x01;
+            usbTestBuf[8]=0x01;
+            usbTestBuf[9]=0x01;*/
+          //  electron.SendUsbPacket(usbTestBuf,sizeof(usbTestBuf));
+            //testAssemblyProtocolFrame();
+            //testAssemblyProtocolFrame();
+            if(usbRx.len)
+            {
+                testReceiveMasterUsbData(usbRx.buf,usbRx.len);
+                memset(usbRx.buf,0,100);
+                usbRx.len=0;
+            }
         }
         for (int i = 15; i > -15; i -= 1)
         {
             float angle = i;
-            electron.UpdateJointAngle(electron.joint[0], angle);
+            //electron.UpdateJointAngle(electron.joint[0], angle);
             HAL_Delay(20);
+            //electron.SendUsbPacket(testuart,sizeof(testuart));
+           // memset(usbTestBuf,0x66,sizeof(usbTestBuf));
+          //  electron.SendUsbPacket(usbTestBuf,sizeof(usbTestBuf));
+            //testAssemblyProtocolFrame();
+            //testAssemblyProtocolFrame();
+            if(usbRx.len)
+            {
+                testReceiveMasterUsbData(usbRx.buf,usbRx.len);
+                memset(usbRx.buf,0,100);
+                usbRx.len=0;
+            }
         }
     }
 #endif
@@ -760,7 +936,7 @@ void Main(void)
 
 //      electron.UpdateJointAngle(electron.joint[ANY], 65 + 75 * std::sin(t));
 
-        myprintf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
+        printf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
                jointSetPoints[0], jointSetPoints[1], jointSetPoints[2],
                jointSetPoints[3], jointSetPoints[4], jointSetPoints[5]);
     }

@@ -81,18 +81,20 @@ file(GLOB_RECURSE SOURCES
         "UserApp/*.*")
 
 #set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F405RGTx_FLASH.ld UserApp/user_flash.c UserApp/user_flash.h)
+#set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F405RGTx_FLASH.ld Bsp/protocol.cpp Bsp/protocol.h)
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F405RGTx_FLASH.ld)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m4 -mthumb -mthumb-interwork)
 add_link_options(-T ${LINKER_SCRIPT})
 
-
 link_directories("Drivers/CMSIS/Lib")
 link_libraries("arm_cortexM4lf_math.a")
 
 #add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT} UserApp/user_flash.c UserApp/user_flash.h)
+#add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT} Bsp/protocol.cpp Bsp/protocol.h)
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
+#add_executable(${PROJECT_NAME}.elf )
 
 set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
 set(BIN_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.bin)

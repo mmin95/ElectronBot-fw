@@ -100,7 +100,9 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
     return (USBD_OK);
 }
 
+//usbrx usbreceive
 
+usbRxBuf_t usbRx;
 static int8_t CDC_Receive_HS(uint8_t* Buf, uint32_t* Len)
 {
     // USBD_CDC_SetRxBuffer(&hUsbDeviceHS, frameBuffer[1]);
@@ -108,6 +110,9 @@ static int8_t CDC_Receive_HS(uint8_t* Buf, uint32_t* Len)
     // Use LL version code instead
 
     // Got data length
+    memcpy(usbRx.buf,Buf,*Len);
+    usbRx.len=*Len;
+
     electron.usbBuffer.receivedPacketLen = *Len;
     if (electron.usbBuffer.receivedPacketLen == 224)
         electron.SwitchPingPongBuffer();

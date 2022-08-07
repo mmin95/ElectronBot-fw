@@ -8,6 +8,12 @@
 
 #define ANY 0
 
+struct usbRxBuf_t
+{
+    uint16_t len;
+    uint8_t  buf[1024]={0};
+};
+
 class Robot
 {
 public:
