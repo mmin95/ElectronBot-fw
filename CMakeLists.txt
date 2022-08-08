@@ -66,6 +66,7 @@ include_directories(
         Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
         Flash
         Bsp
+        PAJ7620U2
         UserApp)
 
 add_definitions(-DUSE_HAL_DRIVER -DSTM32F405xx)
@@ -78,6 +79,7 @@ file(GLOB_RECURSE SOURCES
         "Core/*.*"
         "Flash/*.*"
         "Bsp/*.*"
+        "PAJ7620U2/*.*"
         "UserApp/*.*")
 
 #set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F405RGTx_FLASH.ld UserApp/user_flash.c UserApp/user_flash.h)

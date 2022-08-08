@@ -65,6 +65,7 @@ include_directories(
         Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F
         Flash
         Bsp
+        PAJ7620U2
         UserApp
 )
 
@@ -78,6 +79,7 @@ file(GLOB_RECURSE SOURCES
         "Core/*.*"
         "Flash/*.*"
         "Bsp/*.*"
+        "PAJ7620U2/*.*"
         "UserApp/*.*"
         )
 

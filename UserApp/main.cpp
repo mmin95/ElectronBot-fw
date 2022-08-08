@@ -126,6 +126,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 #include "protocol.h"
 #include "flash.h"
 
+#include "paj7620u2.h"
 
 
 
@@ -740,13 +741,16 @@ extern usbRxBuf_t usbRx;
 void Main(void)
 {
 
-  // HAL_Delay(2000);
-  // electron.lcd->Init(Screen::DEGREE_0);00
-  // electron.lcd->SetWindow(0, 239, 0, 239);
+
+   HAL_Delay(2000);
+   electron.lcd->Init(Screen::DEGREE_0);
+   electron.lcd->SetWindow(0, 239, 0, 239);
   // testAssemblyProtocolFrame();
   // testDataSaveToFlash();
-    test_protocol();
-    test_flash();
+  //  test_protocol();
+  //  test_flash();
+    //paj7620u2_init();
+  //  test_paj7260u2();
     MX_USART1_UART_Init();
     HAL_Delay(2000);
     electron.lcd->Init(Screen::DEGREE_0);
@@ -757,13 +761,14 @@ void Main(void)
     HAL_Delay(200);
     printf("printf:%s",testuart);
    // testAssemblyProtocolFrame();
+    Gesture_test();
 
 #if 1
     // 0.先只连接一个舵机,不设置地址，测试硬件和舵机固件是否OK。
 
     // 1.确保广播Joint的变量正确，直接更新 UpdateJointAngle
     //   可能会因为角度不在变量范围内不发送指令。（请详细读代码）
-   /* electron.joint[0].id = 12;
+    electron.joint[0].id = 2;
     electron.joint[0].angleMax = 180;
     electron.joint[0].angle = 0;
     electron.joint[0].modelAngelMin = -90;
@@ -771,7 +776,7 @@ void Main(void)
 
     electron.joint[0].angleMin = 0;
     // 2.使用广播地址是能
-    electron.SetJointEnable(electron.joint[0], true);*/
+    electron.SetJointEnable(electron.joint[0], true);
 
     for (int j = 0; j < 300; ++j) {
         usbTestBuf[j]=j;
@@ -783,7 +788,7 @@ void Main(void)
         for (int i = -15; i < 15; i += 1)
         {
             float angle = i;
-            //electron.UpdateJointAngle(electron.joint[0], angle);
+            electron.UpdateJointAngle(electron.joint[0], angle);
             HAL_Delay(20);
           //  electron.SendUsbPacket(testuart,sizeof(testuart));
            /* memset(usbTestBuf,0x00,sizeof(usbTestBuf));
@@ -800,29 +805,30 @@ void Main(void)
           //  electron.SendUsbPacket(usbTestBuf,sizeof(usbTestBuf));
             //testAssemblyProtocolFrame();
             //testAssemblyProtocolFrame();
-            if(usbRx.len)
-            {
-                testReceiveMasterUsbData(usbRx.buf,usbRx.len);
-                memset(usbRx.buf,0,100);
-                usbRx.len=0;
-            }
+
+           // if(usbRx.len)
+           // {
+           //     testReceiveMasterUsbData(usbRx.buf,usbRx.len);
+           //     memset(usbRx.buf,0,100);
+           //     usbRx.len=0;
+           // }
         }
         for (int i = 15; i > -15; i -= 1)
         {
             float angle = i;
-            //electron.UpdateJointAngle(electron.joint[0], angle);
+            electron.UpdateJointAngle(electron.joint[0], angle);
             HAL_Delay(20);
             //electron.SendUsbPacket(testuart,sizeof(testuart));
            // memset(usbTestBuf,0x66,sizeof(usbTestBuf));
           //  electron.SendUsbPacket(usbTestBuf,sizeof(usbTestBuf));
             //testAssemblyProtocolFrame();
             //testAssemblyProtocolFrame();
-            if(usbRx.len)
-            {
-                testReceiveMasterUsbData(usbRx.buf,usbRx.len);
-                memset(usbRx.buf,0,100);
-                usbRx.len=0;
-            }
+            //if(usbRx.len)
+           // {
+           //     testReceiveMasterUsbData(usbRx.buf,usbRx.len);
+           //     memset(usbRx.buf,0,100);
+            //    usbRx.len=0;
+            //}
         }
     }
 #endif
