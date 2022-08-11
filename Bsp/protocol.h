@@ -104,6 +104,7 @@ bool ProtocolLookUp(uint8_t* frameBuf, uint8_t* inBuf, uint16_t inLen);//查找i
 void ComposeProtocolFrame(uint8_t* frameBuf, uint16_t* frameLen, ProtocolItem_t* items);//组帧协议帧拷贝到frameBuf
 void testReceiveMasterUsbData(uint8_t *buf, uint16_t len);
 void test_protocol();
-void myprintf(const char* format, ...);
+void myPrintf(const char* format, ...);
+void myDebug(const char* format, ...);
 
 #endif //PROTOCOL_H

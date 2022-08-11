@@ -3,6 +3,17 @@
 #include "screen.h"
 #include "robot.h"
 
+#include "stm32f4xx_hal_uart.h"
+#include "stm32f4xx_hal_flash_ex.h"
+#include "user_flash.h"
+#include "usart.h"
+#include "stdio.h"
+#include "string.h"
+#include "stdlib.h"
+#include "protocol.h"
+#include "flash.h"
+
+#include "paj7620u2.h"
 
 Robot electron(&hspi1, &hi2c1);
 float jointSetPoints[6];
@@ -12,16 +23,29 @@ bool isEnabled = false;
 void Main(void)
 {
     HAL_Delay(2000);
+    MX_USART1_UART_Init();
     electron.lcd->Init(Screen::DEGREE_0);
     electron.lcd->SetWindow(0, 239, 0, 239);
 
 
     electron.UpdateJointAngle(electron.joint[1], 0);
+    myPrintf("joint1 connect ok\r\n");
+    HAL_Delay(50);
     electron.UpdateJointAngle(electron.joint[2], 0);
+    myPrintf("joint2 connect ok\r\n");
+    HAL_Delay(50);
     electron.UpdateJointAngle(electron.joint[3], 0);
+    myPrintf("joint3 connect ok\r\n");
+    HAL_Delay(50);
     electron.UpdateJointAngle(electron.joint[4], 0);
+    myPrintf("joint4 connect ok\r\n");
+    HAL_Delay(50);
     electron.UpdateJointAngle(electron.joint[5], 0);
+    myPrintf("joint5 connect ok\r\n");
+    HAL_Delay(50);
     electron.UpdateJointAngle(electron.joint[6], 0);
+    myPrintf("joint6 connect ok\r\n");
+    HAL_Delay(50);
 
     electron.SetJointTorqueLimit(electron.joint[2],0.5);
     electron.SetJointKp(electron.joint[2],40);
@@ -97,7 +121,7 @@ void Main(void)
 
 //      electron.UpdateJointAngle(electron.joint[ANY], 65 + 75 * std::sin(t));
 
-        myprintf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
+        myPrintf("%.2f,%.2f,%.2f,%.2f,%.2f,%.2f\n",
                jointSetPoints[0], jointSetPoints[1], jointSetPoints[2],
                jointSetPoints[3], jointSetPoints[4], jointSetPoints[5]);
     }
@@ -111,7 +135,7 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef* hspi)
 }
 */
 
-
+/*
 #include <cmath>
 #include "common_inc.h"
 #include "screen.h"
@@ -136,7 +160,7 @@ Robot electron(&hspi1, &hi2c1);
 float jointSetPoints[6];
 bool isEnabled = false;
 uint8_t testuart[]={"testuart"};
-
+*/
 /*
 int fputc(int ch,FILE *f)
 {
@@ -254,7 +278,7 @@ void BufClear(uint8_t *buf,uint8_t value,uint16_t len)
 }
 
 
-void myprintf(const char *format,...)
+void myPrintf(const char *format,...)
 {
     //char str[80];
     //sprintf(str,format);
@@ -575,42 +599,42 @@ void testReceiveMasterUsbData(uint8_t *inbuf, uint16_t len)
     idbuf=ProtocolItem.jointID/2;
     memcpy(&local,ProtocolItem.data,sizeof(ElectronBotJointStatus_t));
 
-    myprintf("ElectronBotID=%d\r\n",ProtocolItem.ElectronBotID);
+    myPrintf("ElectronBotID=%d\r\n",ProtocolItem.ElectronBotID);
     HAL_Delay(200);
-    myprintf("cmd=%d\r\n",ProtocolItem.cmd);
+    myPrintf("cmd=%d\r\n",ProtocolItem.cmd);
     HAL_Delay(200);
-    myprintf("jointID=%d\r\n",ProtocolItem.jointID);
+    myPrintf("jointID=%d\r\n",ProtocolItem.jointID);
     HAL_Delay(200);
-    myprintf("angleMin=%f\r\n",local.angleMin);
+    myPrintf("angleMin=%f\r\n",local.angleMin);
     //char str[80];
-    // smyprintf(str,"angleMin=%f\r\n",local.angleMin);
+    // smyPrintf(str,"angleMin=%f\r\n",local.angleMin);
     // HAL_UART_Transmit(&huart1,(uint8_t *)str, strlen(str),10);
 
     HAL_Delay(200);
-    myprintf("angleMax=%f\r\n",local.angleMax);
+    myPrintf("angleMax=%f\r\n",local.angleMax);
     HAL_Delay(200);
-    myprintf("angle=%f\r\n",local.angle);
+    myPrintf("angle=%f\r\n",local.angle);
     HAL_Delay(200);
-    myprintf("modelAngelMin=%f\r\n",local.modelAngelMin);
+    myPrintf("modelAngelMin=%f\r\n",local.modelAngelMin);
     HAL_Delay(200);
-    myprintf("modelAngelMax=%f\r\n",local.modelAngelMax);
+    myPrintf("modelAngelMax=%f\r\n",local.modelAngelMax);
     HAL_Delay(200);
-    //myprintf("inverted=%d\r\n",local.inverted);
-    myprintf("inverted=%s\r\n",local.inverted?"true" :"false");
+    //myPrintf("inverted=%d\r\n",local.inverted);
+    myPrintf("inverted=%s\r\n",local.inverted?"true" :"false");
     HAL_Delay(200);
-    myprintf("initAngle=%f\r\n",local.initAngle);
+    myPrintf("initAngle=%f\r\n",local.initAngle);
     HAL_Delay(200);
-    myprintf("torqueLimit=%f\r\n",local.torqueLimit);
+    myPrintf("torqueLimit=%f\r\n",local.torqueLimit);
     HAL_Delay(200);
-    myprintf("kp=%f\r\n",local.kp);
+    myPrintf("kp=%f\r\n",local.kp);
     HAL_Delay(200);
-    myprintf("ki=%f\r\n",local.ki);
+    myPrintf("ki=%f\r\n",local.ki);
     HAL_Delay(200);
-    myprintf("kv=%f\r\n",local.kv);
+    myPrintf("kv=%f\r\n",local.kv);
     HAL_Delay(200);
-    myprintf("kd=%f\r\n",local.kd);
+    myPrintf("kd=%f\r\n",local.kd);
     HAL_Delay(200);
-    myprintf("enable=%s\r\n",local.enable?"true" :"false");
+    myPrintf("enable=%s\r\n",local.enable?"true" :"false");
     HAL_Delay(200);
 }
 int testDataSaveToFlash()
@@ -644,37 +668,37 @@ int testDataSaveToFlash()
     memcpy(&local,buf,sizeof(ElectronBotJointStatus_t));
     //HAL_Delay(500);
 
-    // myprintf("angleMin=%f\r\n",local.angleMin);
-    myprintf("angleMin=%f\r\n",local.angleMin);
+    // myPrintf("angleMin=%f\r\n",local.angleMin);
+    myPrintf("angleMin=%f\r\n",local.angleMin);
     //char str[80];
-    // smyprintf(str,"angleMin=%f\r\n",local.angleMin);
+    // smyPrintf(str,"angleMin=%f\r\n",local.angleMin);
     // HAL_UART_Transmit(&huart1,(uint8_t *)str, strlen(str),10);
 
     HAL_Delay(200);
-    myprintf("angleMax=%f\r\n",local.angleMax);
+    myPrintf("angleMax=%f\r\n",local.angleMax);
     HAL_Delay(200);
-    myprintf("angle=%f\r\n",local.angle);
+    myPrintf("angle=%f\r\n",local.angle);
     HAL_Delay(200);
-    myprintf("modelAngelMin=%f\r\n",local.modelAngelMin);
+    myPrintf("modelAngelMin=%f\r\n",local.modelAngelMin);
     HAL_Delay(200);
-    myprintf("modelAngelMax=%f\r\n",local.modelAngelMax);
+    myPrintf("modelAngelMax=%f\r\n",local.modelAngelMax);
     HAL_Delay(200);
-    //myprintf("inverted=%d\r\n",local.inverted);
-    myprintf("inverted=%s\r\n",local.inverted?"true" :"false");
+    //myPrintf("inverted=%d\r\n",local.inverted);
+    myPrintf("inverted=%s\r\n",local.inverted?"true" :"false");
     HAL_Delay(200);
-    myprintf("initAngle=%f\r\n",local.initAngle);
+    myPrintf("initAngle=%f\r\n",local.initAngle);
     HAL_Delay(200);
-    myprintf("torqueLimit=%f\r\n",local.torqueLimit);
+    myPrintf("torqueLimit=%f\r\n",local.torqueLimit);
     HAL_Delay(200);
-    myprintf("kp=%f\r\n",local.kp);
+    myPrintf("kp=%f\r\n",local.kp);
     HAL_Delay(200);
-    myprintf("ki=%f\r\n",local.ki);
+    myPrintf("ki=%f\r\n",local.ki);
     HAL_Delay(200);
-    myprintf("kv=%f\r\n",local.kv);
+    myPrintf("kv=%f\r\n",local.kv);
     HAL_Delay(200);
-    myprintf("kd=%f\r\n",local.kd);
+    myPrintf("kd=%f\r\n",local.kd);
     HAL_Delay(200);
-    myprintf("enable=%s\r\n",local.enable?"true" :"false");
+    myPrintf("enable=%s\r\n",local.enable?"true" :"false");
     HAL_Delay(200);
     return 0;
 }
@@ -736,20 +760,43 @@ void testAssemblyProtocolFrame()
     ProtocolProcessing(txbuf.buf,txbuf.dataLen);
 }*/
 
+#include <cmath>
+#include "common_inc.h"
+#include "screen.h"
+#include "robot.h"
+#include "stm32f4xx_hal_uart.h"
+#include "stm32f4xx_hal_flash_ex.h"
+#include "user_flash.h"
+#include "usart.h"
+#include "stdio.h"
+#include "string.h"
+#include "stdlib.h"
+#include "protocol.h"
+#include "flash.h"
+
+#include "paj7620u2.h"
+
+///#include "paj7620.h"
+
+Robot electron(&hspi1, &hi2c1);
+float jointSetPoints[6];
+bool isEnabled = false;
+uint8_t testuart[]={"testuart"};
+
 uint8_t usbTestBuf[300]={0};
 extern usbRxBuf_t usbRx;
 void Main(void)
 {
 
 
-   HAL_Delay(2000);
-   electron.lcd->Init(Screen::DEGREE_0);
-   electron.lcd->SetWindow(0, 239, 0, 239);
+  // HAL_Delay(2000);
+  // electron.lcd->Init(Screen::DEGREE_0);
+  // electron.lcd->SetWindow(0, 239, 0, 239);
   // testAssemblyProtocolFrame();
   // testDataSaveToFlash();
   //  test_protocol();
   //  test_flash();
-    //paj7620u2_init();
+
   //  test_paj7260u2();
     MX_USART1_UART_Init();
     HAL_Delay(2000);
@@ -759,16 +806,22 @@ void Main(void)
     //HAL_UART_Transmit(&huart1,&testuart[0], sizeof(testuart),50);
     HAL_UART_Transmit(&huart1,testuart, sizeof(testuart),50);
     HAL_Delay(200);
-    printf("printf:%s",testuart);
+    myPrintf("%s",paj7620u2_init()?"paj7620 init succes!!\r\n":"paj7620 init fail!!\r\n");
+
+   // printf("printf:%s",testuart);
    // testAssemblyProtocolFrame();
     Gesture_test();
+
+    //paj7620Init();
+    HAL_Delay(200);
+    //Gesture_test2();
 
 #if 1
     // 0.先只连接一个舵机,不设置地址，测试硬件和舵机固件是否OK。
 
     // 1.确保广播Joint的变量正确，直接更新 UpdateJointAngle
     //   可能会因为角度不在变量范围内不发送指令。（请详细读代码）
-    electron.joint[0].id = 2;
+    electron.joint[0].id = 4;
     electron.joint[0].angleMax = 180;
     electron.joint[0].angle = 0;
     electron.joint[0].modelAngelMin = -90;
@@ -833,7 +886,7 @@ void Main(void)
     }
 #endif
 
-#if  0
+#if 0
     // 0.当能够正常用广播地址控制单个舵机后，现在进行舵机的ID设置、
     //   还是只连接一个舵机
 
@@ -847,18 +900,17 @@ void Main(void)
     electron.joint[0].angle = 0;
     electron.joint[0].modelAngelMin = -90;
     electron.joint[0].modelAngelMax = 90;
-    electron.SetJointId(electron.joint[0], 6);
+    electron.SetJointId(electron.joint[0], 4);
 
     HAL_Delay(1000);
     // 3.等待舵机参数保存。将主控 joint[0].id改为 2
-    electron.joint[0].id = 6;  //这里改为新地址
+    electron.joint[0].id = 4;  //这里改为新地址
     electron.joint[0].angleMin = 0;
     electron.joint[0].angleMax = 180;
     electron.joint[0].angle = 0;
     electron.joint[0].modelAngelMin = -90;
     electron.joint[0].modelAngelMax = 90;
 
-     while (1);
     // 4.使用新设置的2地址通讯
     electron.SetJointEnable(electron.joint[0], true);
     while (1)

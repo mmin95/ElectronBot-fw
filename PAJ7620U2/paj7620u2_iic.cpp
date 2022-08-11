@@ -4,6 +4,7 @@
 
 #include "paj7620u2_iic.h"
 #include "paj7620u2.h"
+#include "protocol.h"
 
 
 //////////////////////////////////////////////////////////////////////////////////
@@ -173,15 +174,46 @@ u8 GS_Write_Byte(u8 REG_Address,u8 REG_data)
 
 u8 GS_Write_Byte(u8 REG_Address,u8 REG_data)
 {
+
+
     //GS_IIC_Start();
     //GS_IIC_Send_Byte(PAJ7620_ID);
    // uint8_t *p;
    // p=&REG_Address;
    // HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, p, 1, 5);
-    HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, &REG_Address, 1, 5);
-   // p=&REG_data;
+    HAL_StatusTypeDef state = HAL_ERROR;
+    int i;
+
+    myDebug("**GS_Write_Byte***\r\n");
+    HAL_Delay(20);
+
+    i=iicMaxTry;
+    do
+    {
+        //state = HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, &REG_Address, 1, 5);
+        state = HAL_I2C_Mem_Write(&hi2c1,PAJ7620_ID,REG_Address,I2C_MEMADD_SIZE_8BIT,&REG_data,1,5);
+        i--;
+    } while(state != HAL_OK && i>0);
+    if(state != HAL_OK)
+    {
+        myDebug("iic mem write  fail\r\n");
+        HAL_Delay(20);
+    }
+
+    // p=&REG_data;
    // HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, p, 1, 5);
-    HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, &REG_data, 1, 5);
+  // state = HAL_ERROR;
+  // i=iicMaxTry;
+  // do
+  // {
+  //     state = HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, &REG_data, 1, 5);
+  //     i--;
+  // } while(state != HAL_OK && i>0);
+  // if(state != HAL_OK)
+  // {
+  //     myDebug("iic write data fail\r\n");
+  //     HAL_Delay(20);
+  // }
     return 0;
 }
 
@@ -218,7 +250,41 @@ u8 GS_Read_Byte(u8 REG_Address)
 
    // uint8_t *p;
   //  p=&REG_Address;
-    HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, &REG_Address, 1, 5);
+
+    HAL_StatusTypeDef state = HAL_ERROR;
+    int i;
+
+    myDebug("**GS_Read_Byte***\r\n");
+    HAL_Delay(20);
+
+    i=iicMaxTry;
+    do
+    {
+        state = HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, &REG_Address, 1, 5);
+        //state = HAL_I2C_Mem_Write(&hi2c1,PAJ7620_ID,REG_Address,I2C_MEMADD_SIZE_8BIT,0,1,5);
+        i--;
+    }while (state != HAL_OK && i>0);
+    if(state != HAL_OK)
+    {
+        myDebug("iic write REG_Address fail\r\n");
+        HAL_Delay(20);
+    }
+
+    state = HAL_ERROR;
+    i=iicMaxTry;
+    do
+    {
+        //HAL_I2C_Master_Receive(&hi2c1, PAJ7620_ID|0x01, &REG_data, 1, 5);
+        //
+        // state = HAL_I2C_Master_Receive(&hi2c1, PAJ7620_ID|0x01, &REG_data, 1, 5);
+        state = HAL_I2C_Master_Receive(&hi2c1, PAJ7620_ID, &REG_data, 1, 5);
+        i--;
+    } while (state != HAL_OK && i>0);
+    if(state != HAL_OK)
+    {
+        myDebug("iic read data fail\r\n");
+        HAL_Delay(20);
+    }
 
     //if(GS_IIC_Wait_Ack())
     //{
@@ -232,7 +298,12 @@ u8 GS_Read_Byte(u8 REG_Address)
    // HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID|0x01, p, 5, 5);
     //GS_IIC_Wait_Ack();
     //REG_data = GS_IIC_Read_Byte(0);
-    HAL_I2C_Master_Receive(&hi2c1, PAJ7620_ID|0x01, &REG_data, 1, 5);
+
+   // do
+   // {
+   //     HAL_I2C_Master_Receive(&hi2c1, PAJ7620_ID|0x01, &REG_data, 1, 5);
+   // } while (state != HAL_OK);
+
    // GS_IIC_Stop();
    // HAL_I2C_Master_Receive();
     return REG_data;
@@ -276,15 +347,49 @@ u8 GS_Read_nByte(u8 REG_Address,u16 len,u8 *buf)
 
 u8 GS_Read_nByte(u8 REG_Address,u16 len,u8 *buf)
 {
-    HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, &REG_Address, 1, 5);
-    HAL_I2C_Master_Receive(&hi2c1, PAJ7620_ID|0x01, buf, len, 5);
+    HAL_StatusTypeDef state = HAL_ERROR;
+    int i;
+
+    myDebug("**GS_Read_nByte***\r\n");
+    HAL_Delay(20);
+
+    i=iicMaxTry;
+    do
+    {
+        //state = HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, &REG_Address, 1, 5);
+        state = HAL_I2C_Mem_Write(&hi2c1,PAJ7620_ID,REG_Address,I2C_MEMADD_SIZE_8BIT,0,1,5);
+        i--;
+    } while (state != HAL_OK && i>0);
+    if(state != HAL_OK)
+    {
+        myDebug("iic write REG_Address fail\r\n");
+        HAL_Delay(20);
+    }
+
+    state = HAL_ERROR;
+    i=iicMaxTry;
+    do
+    {
+        //state = HAL_I2C_Master_Receive(&hi2c1, PAJ7620_ID|0x01, buf, len, 5);
+        //state = HAL_I2C_Master_Receive(&hi2c1, PAJ7620_ID|0x01, buf, len, 5);
+        state = HAL_I2C_Master_Receive(&hi2c1, PAJ7620_ID, buf, len, 5);
+        i--;
+    }while (state != HAL_OK && i>0);
+    if(state != HAL_OK)
+    {
+        myDebug("iic read data fail\r\n");
+        HAL_Delay(20);
+    }
+
     return 0;
 }
 //PAJ7620唤醒
 void GS_WakeUp(void)
 {
     //GS_IIC_Start();
+    uint8_t data=0;
     //GS_IIC_Send_Byte(PAJ7620_ID);//发写命令
+    HAL_I2C_Master_Transmit(&hi2c1, PAJ7620_ID, &data, 0, 5);
     //GS_IIC_Stop();//释放总线
 }
 

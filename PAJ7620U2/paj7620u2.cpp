@@ -46,6 +46,7 @@ u8 paj7620u2_init(void)
 {
     u8 i;
     u8 status;
+    uint8_t readdata=0;
 
     GS_i2c_init();//IIC初始化
     status = paj7620u2_wakeup();//唤醒PAJ7620U2
@@ -54,6 +55,13 @@ u8 paj7620u2_init(void)
     for(i=0;i<INIT_SIZE;i++)
     {
         GS_Write_Byte(init_Array[i][0],init_Array[i][1]);//初始化PAJ7620U2
+        myPrintf("write address %x  write data %x\r\n",init_Array[i][0],init_Array[i][1]);
+        HAL_Delay(20);
+        readdata=GS_Read_Byte(init_Array[i][0]);//初始化PAJ7620U2
+        myPrintf("read address %x  read data %x\r\n",init_Array[i][0],readdata);
+        HAL_Delay(20);
+        myPrintf("********");
+        HAL_Delay(10);
     }
     paj7620u2_selectBank(BANK0);//切换回BANK0寄存器区域
 
@@ -100,23 +108,27 @@ void Gesture_test(void)
                 switch(gesture_data)
                 {
                     case GES_UP:
-                        myprintf("Up\r\n");            ledflash=1;      break; //向上
+                        myPrintf("Left\r\n");            ledflash=1;      break; //向上Left
+                        //myPrintf("Up\r\n");            ledflash=1;      break; //向上Left
                     case GES_DOWM:
-                        myprintf("Dowm\r\n");          ledflash=1;      break; //向下
+                        myPrintf("Right\r\n");          ledflash=1;      break; //向下Right
+                        //myPrintf("Dowm\r\n");          ledflash=1;      break; //向下Right
                     case GES_LEFT:
-                        myprintf("Left\r\n");          ledflash=1;      break; //向左
+                        myPrintf("Dowm\r\n");          ledflash=1;      break; //向左Dowm
+                        //myPrintf("Left\r\n");          ledflash=1;      break; //向左Dowm
                     case GES_RIGHT:
-                        myprintf("Right\r\n");         ledflash=1;      break; //向右
+                        myPrintf("Up\r\n");         ledflash=1;      break; //向右Up
+                        //myPrintf("Right\r\n");         ledflash=1;      break; //向右Up
                     case GES_FORWARD:
-                        myprintf("Forward\r\n");       ledflash=1;      break; //向前
+                        myPrintf("Forward\r\n");       ledflash=1;      break; //向前
                     case GES_BACKWARD:
-                        myprintf("Backward\r\n");      ledflash=1;      break; //向后
+                        myPrintf("Backward\r\n");      ledflash=1;      break; //向后
                     case GES_CLOCKWISE:
-                        myprintf("Clockwise\r\n");     ledflash=1;      break; //顺时针
+                        myPrintf("Clockwise\r\n");     ledflash=1;      break; //顺时针
                     case GES_COUNT_CLOCKWISE:
-                        myprintf("AntiClockwise\r\n"); ledflash=1;      break; //逆时针
+                        myPrintf("AntiClockwise\r\n"); ledflash=1;      break; //逆时针
                     case GES_WAVE:
-                        myprintf("Wave\r\n");          ledflash=1;      break; //挥动
+                        myPrintf("Wave\r\n");          ledflash=1;      break; //挥动
                     default:  ledflash=0; break;
                }
                 if(ledflash)//DS1闪烁
@@ -130,6 +142,7 @@ void Gesture_test(void)
 
         }
         //delay_ms(50);
+        //myPrintf("%d\r\n",status);
         HAL_Delay(50);
         //i++;
         //if(i==5)

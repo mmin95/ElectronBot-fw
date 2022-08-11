@@ -7,6 +7,7 @@
 
 #include "i2c.h"
 
+
 typedef uint32_t  u32;
 typedef uint16_t u16;
 typedef uint8_t  u8;
@@ -33,6 +34,8 @@ extern I2C_HandleTypeDef hi2c1;
 #define GS_IIC_SDA    PBout(11) 		//SDA
 #define GS_READ_SDA   PBin(11) 		    // ‰»ÎSDA
 
+
+#define iicMaxTry 5
 u8 GS_Write_Byte(u8 REG_Address,u8 REG_data);
 u8 GS_Read_Byte(u8 REG_Address);
 u8 GS_Read_nByte(u8 REG_Address,u16 len,u8 *buf);

@@ -22,9 +22,17 @@ int fputc(int ch,FILE *f)
     return ch;
 }
 
-void myprintf(const char* format, ...)
+void myPrintf(const char* format, ...)
 {
     printf(format);
+}
+
+#define  myDebugEn 0
+void myDebug(const char* format, ...)
+{
+#if  myDebugEn
+    printf(format);
+#endif
 }
 
 void BufClear(uint8_t* buf, uint8_t value, uint16_t len)
@@ -137,7 +145,7 @@ void ProtocolProcessing(uint8_t* buf, uint16_t len)
 
     if (ProtocolLookUp(frameBuf, buf, len) == false)
     {
-        myprintf("\r\n  No Protocol!!!!!!! \r\n");
+        myPrintf("\r\n  No Protocol!!!!!!! \r\n");
         return;
     }
 
@@ -147,28 +155,28 @@ void ProtocolProcessing(uint8_t* buf, uint16_t len)
     ProtocolItem.dataLen = frameBuf[7] + frameBuf[8] * 256;
     ProtocolItem.data = &frameBuf[9];
 
-    myprintf("ElectronBotID=%d\r\n", ProtocolItem.ElectronBotID);
-    myprintf("jointID=%d\r\n", ProtocolItem.jointID);
-    myprintf("dataLen=%d\r\n", ProtocolItem.dataLen);
+    myPrintf("ElectronBotID=%d\r\n", ProtocolItem.ElectronBotID);
+    myPrintf("jointID=%d\r\n", ProtocolItem.jointID);
+    myPrintf("dataLen=%d\r\n", ProtocolItem.dataLen);
 
     test = (ElectronBotJointStatus_t*)ProtocolItem.data;
 
     idbuf = ProtocolItem.jointID / 2;
     if (ProtocolItem.cmd == CMD_WriteAllJointStatus || ProtocolItem.cmd == CMD_WriteAllJointStatus |0x80)
     {
-        myprintf("cmd=CMD_WriteAllJointStatus\r\n");
-        myprintf("angleMax=%f\r\n", test->angleMax);
-        myprintf("angle=%f\r\n", test->angle);
-        myprintf("modelAngelMin=%f\r\n", test->modelAngelMin);
-        myprintf("modelAngelMax=%f\r\n", test->modelAngelMax);
-        myprintf("inverted=%s\r\n", test->inverted ? "true" : "false");
-        myprintf("initAngle=%f\r\n", test->initAngle);
-        myprintf("torqueLimit=%f\r\n", test->torqueLimit);
-        myprintf("kp=%f\r\n", test->kp);
-        myprintf("ki=%f\r\n", test->ki);
-        myprintf("kv=%f\r\n", test->kv);
-        myprintf("kd=%f\r\n", test->kd);
-        myprintf("enable=%s\r\n", test->enable ? "true" : "false");
+        myPrintf("cmd=CMD_WriteAllJointStatus\r\n");
+        myPrintf("angleMax=%f\r\n", test->angleMax);
+        myPrintf("angle=%f\r\n", test->angle);
+        myPrintf("modelAngelMin=%f\r\n", test->modelAngelMin);
+        myPrintf("modelAngelMax=%f\r\n", test->modelAngelMax);
+        myPrintf("inverted=%s\r\n", test->inverted ? "true" : "false");
+        myPrintf("initAngle=%f\r\n", test->initAngle);
+        myPrintf("torqueLimit=%f\r\n", test->torqueLimit);
+        myPrintf("kp=%f\r\n", test->kp);
+        myPrintf("ki=%f\r\n", test->ki);
+        myPrintf("kv=%f\r\n", test->kv);
+        myPrintf("kd=%f\r\n", test->kd);
+        myPrintf("enable=%s\r\n", test->enable ? "true" : "false");
     }
 }
 
@@ -229,7 +237,7 @@ void testReceiveMasterUsbData(uint8_t *buf, uint16_t len)
 
     if (ProtocolLookUp(frameBuf, buf, len) == false)
     {
-        myprintf("\r\n testReceiveMasterUsbData() not found protocol\r\n");
+        myPrintf("\r\n testReceiveMasterUsbData() not found protocol\r\n");
         return;
     }
 
@@ -246,41 +254,41 @@ void testReceiveMasterUsbData(uint8_t *buf, uint16_t len)
 
     memcpy(&local,ProtocolItem.data,sizeof(ElectronBotJointStatus_t));
 
-    myprintf("ElectronBotID=%d\r\n",ProtocolItem.ElectronBotID);
+    myPrintf("ElectronBotID=%d\r\n",ProtocolItem.ElectronBotID);
     HAL_Delay(200);
-    myprintf("cmd=%d\r\n",ProtocolItem.cmd);
+    myPrintf("cmd=%d\r\n",ProtocolItem.cmd);
     HAL_Delay(200);
-    myprintf("jointID=%d\r\n",ProtocolItem.jointID);
+    myPrintf("jointID=%d\r\n",ProtocolItem.jointID);
     HAL_Delay(200);
-    myprintf("angleMin=%f\r\n",local.angleMin);
+    myPrintf("angleMin=%f\r\n",local.angleMin);
     //char str[80];
-    // smyprintf(str,"angleMin=%f\r\n",local.angleMin);
+    // smyPrintf(str,"angleMin=%f\r\n",local.angleMin);
     // HAL_UART_Transmit(&huart1,(uint8_t *)str, strlen(str),10);
 
     HAL_Delay(200);
-    myprintf("angleMax=%f\r\n",local.angleMax);
+    myPrintf("angleMax=%f\r\n",local.angleMax);
     HAL_Delay(200);
-    myprintf("angle=%f\r\n",local.angle);
+    myPrintf("angle=%f\r\n",local.angle);
     HAL_Delay(200);
-    myprintf("modelAngelMin=%f\r\n",local.modelAngelMin);
+    myPrintf("modelAngelMin=%f\r\n",local.modelAngelMin);
     HAL_Delay(200);
-    myprintf("modelAngelMax=%f\r\n",local.modelAngelMax);
+    myPrintf("modelAngelMax=%f\r\n",local.modelAngelMax);
     HAL_Delay(200);
-    //myprintf("inverted=%d\r\n",local.inverted);
-    myprintf("inverted=%s\r\n",local.inverted?"true" :"false");
+    //myPrintf("inverted=%d\r\n",local.inverted);
+    myPrintf("inverted=%s\r\n",local.inverted?"true" :"false");
     HAL_Delay(200);
-    myprintf("initAngle=%f\r\n",local.initAngle);
+    myPrintf("initAngle=%f\r\n",local.initAngle);
     HAL_Delay(200);
-    myprintf("torqueLimit=%f\r\n",local.torqueLimit);
+    myPrintf("torqueLimit=%f\r\n",local.torqueLimit);
     HAL_Delay(200);
-    myprintf("kp=%f\r\n",local.kp);
+    myPrintf("kp=%f\r\n",local.kp);
     HAL_Delay(200);
-    myprintf("ki=%f\r\n",local.ki);
+    myPrintf("ki=%f\r\n",local.ki);
     HAL_Delay(200);
-    myprintf("kv=%f\r\n",local.kv);
+    myPrintf("kv=%f\r\n",local.kv);
     HAL_Delay(200);
-    myprintf("kd=%f\r\n",local.kd);
+    myPrintf("kd=%f\r\n",local.kd);
     HAL_Delay(200);
-    myprintf("enable=%s\r\n",local.enable?"true" :"false");
+    myPrintf("enable=%s\r\n",local.enable?"true" :"false");
     HAL_Delay(200);
 }
