@@ -74,6 +74,6 @@ typedef enum{
 u8 paj7620u2_init(void);
 void paj7620u2_sensor_test(void);
 void Gesture_test(void);
-
+void Gesture(void);
 void test_paj7260u2(void);
 #endif //ELECTRONBOT_FW_PAJ7260U2_H

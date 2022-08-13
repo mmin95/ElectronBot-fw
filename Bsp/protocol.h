@@ -12,10 +12,14 @@
 #include "string.h"
 #include "stdlib.h"
 #include "stm32f4xx_hal.h"
+#include "stm32f4xx_hal_flash_ex.h"
 #include "flash.h"
 #include <cmath>
 #include "stm32f4xx_hal_uart.h"
 #include "usart.h"
+#include "myPrintf.h"
+#include "usbd_cdc_if.h"
+#include "usbd_def.h"
 
 #define FrameHead  0xea
 #define FrameTail  0xea
@@ -55,7 +59,7 @@ struct ElectronBotJointStatus_t
     float ki;
     float kv;
     float kd;
-    bool enable;  //舵机使能
+    bool enable=false;  //舵机使能
 };
 //ElectronBotJointStatus_t ElectronBotjoint[6];
 
@@ -98,13 +102,20 @@ struct rxbuf_t {
 };
 //rxbuf_t rxbuf;
 
+struct flashSave_t{
+    ElectronBotJointStatus_t ElectronBotjoint[6];
+    uint16_t len;
+    uint32_t saveFlag;
+};
+
 void testComposeProtocolFrame();
 void ProtocolProcessing(uint8_t* buf, uint16_t len);//处理数据
 bool ProtocolLookUp(uint8_t* frameBuf, uint8_t* inBuf, uint16_t inLen);//查找inBuf里是否有协议帧,有则将协议帧拷贝到frameBuf
 void ComposeProtocolFrame(uint8_t* frameBuf, uint16_t* frameLen, ProtocolItem_t* items);//组帧协议帧拷贝到frameBuf
 void testReceiveMasterUsbData(uint8_t *buf, uint16_t len);
 void test_protocol();
-void myPrintf(const char* format, ...);
-void myDebug(const char* format, ...);
+void JointStatusUpdata(void);
+//void myPrintf(const char* format, ...);
+//void myDebug(const char* format, ...);
 
 #endif //PROTOCOL_H

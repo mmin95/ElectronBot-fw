@@ -2,6 +2,7 @@
 #include "usbd_cdc_if.h"
 
 
+
 uint8_t* Robot::GetPingPongBufferPtr()
 {
     return &(usbBuffer.rxData[usbBuffer.pingPongIndex][usbBuffer.rxDataOffset]);
@@ -81,14 +82,32 @@ void Robot::SetJointEnable(Robot::JointStatus_t &_joint, bool _enable)
 void Robot::TransmitAndReceiveI2cPacket(uint8_t _id)
 {
     HAL_StatusTypeDef state = HAL_ERROR;
+    int i=0;
+
+    i=iicMaxTry;
+
     do
     {
         state = HAL_I2C_Master_Transmit(motorI2c, _id, i2cTxData, 5, 5);
-    } while (state != HAL_OK);
+        i--;
+    } while (state != HAL_OK && i>0);
+    if(state != HAL_OK)
+    {
+        myPrintf("iic write joint%d fail\r\n",_id);
+        HAL_Delay(20);
+    }
+
+    state = HAL_ERROR;
     do
     {
         state = HAL_I2C_Master_Receive(motorI2c, _id, i2cRxData, 5, 5);
-    } while (state != HAL_OK);
+        i--;
+    } while (state != HAL_OK && i>0);
+    if(state != HAL_OK)
+    {
+        myPrintf("iic read joint%d fail\r\n",_id);
+        HAL_Delay(20);
+    }
 }
 
 

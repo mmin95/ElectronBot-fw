@@ -19,6 +19,7 @@ Robot electron(&hspi1, &hi2c1);
 float jointSetPoints[6];
 bool isEnabled = false;
 
+extern usbRxBuf_t usbRx;
 
 void Main(void)
 {
@@ -26,46 +27,61 @@ void Main(void)
     MX_USART1_UART_Init();
     electron.lcd->Init(Screen::DEGREE_0);
     electron.lcd->SetWindow(0, 239, 0, 239);
+    //paj7620u2_init();
+
+  // electron.UpdateJointAngle(electron.joint[1], 0);
+  // myPrintf("joint1 connect ok\r\n");
+  // HAL_Delay(50);
+  // electron.UpdateJointAngle(electron.joint[2], 0);
+  // myPrintf("joint2 connect ok\r\n");
+  // HAL_Delay(50);
+  // electron.UpdateJointAngle(electron.joint[3], 0);
+  // myPrintf("joint3 connect ok\r\n");
+  // HAL_Delay(50);
+  // electron.UpdateJointAngle(electron.joint[4], 0);
+  // myPrintf("joint4 connect ok\r\n");
+  // HAL_Delay(50);
+  // electron.UpdateJointAngle(electron.joint[5], 0);
+  // myPrintf("joint5 connect ok\r\n");
+  // HAL_Delay(50);
+  // electron.UpdateJointAngle(electron.joint[6], 0);
+  // myPrintf("joint6 connect ok\r\n");
+  // HAL_Delay(50);
+
+  // electron.SetJointTorqueLimit(electron.joint[2],0.5);
+  // electron.SetJointKp(electron.joint[2],40);
+
+  // electron.SetJointTorqueLimit(electron.joint[3],0.5);
+  // electron.SetJointKp(electron.joint[3],40);
+
+  // electron.SetJointTorqueLimit(electron.joint[4],0.5);
+  // electron.SetJointKp(electron.joint[4],40);
 
 
-    electron.UpdateJointAngle(electron.joint[1], 0);
-    myPrintf("joint1 connect ok\r\n");
-    HAL_Delay(50);
-    electron.UpdateJointAngle(electron.joint[2], 0);
-    myPrintf("joint2 connect ok\r\n");
-    HAL_Delay(50);
-    electron.UpdateJointAngle(electron.joint[3], 0);
-    myPrintf("joint3 connect ok\r\n");
-    HAL_Delay(50);
-    electron.UpdateJointAngle(electron.joint[4], 0);
-    myPrintf("joint4 connect ok\r\n");
-    HAL_Delay(50);
-    electron.UpdateJointAngle(electron.joint[5], 0);
-    myPrintf("joint5 connect ok\r\n");
-    HAL_Delay(50);
-    electron.UpdateJointAngle(electron.joint[6], 0);
-    myPrintf("joint6 connect ok\r\n");
-    HAL_Delay(50);
+  // electron.SetJointTorqueLimit(electron.joint[5],0.5);
+  // electron.SetJointKp(electron.joint[5],40);
 
-    electron.SetJointTorqueLimit(electron.joint[2],0.5);
-    electron.SetJointKp(electron.joint[2],40);
-
-    electron.SetJointTorqueLimit(electron.joint[3],0.5);
-    electron.SetJointKp(electron.joint[3],40);
-
-    electron.SetJointTorqueLimit(electron.joint[4],0.5);
-    electron.SetJointKp(electron.joint[4],40);
-
-
-    electron.SetJointTorqueLimit(electron.joint[5],0.5);
-    electron.SetJointKp(electron.joint[5],40);
 
 
     float t = 0;
 
+    //Gesture_test2();
+    //JointStatusUpdata();
+
     while (true)
     {
-#if 1
+        //Gesture_test();
+        //Gesture();
+
+        if(usbRx.len)
+        {
+            //testReceiveMasterUsbData(usbRx.buf,usbRx.len);
+            //ProtocolProcessing(usbRx.buf,usbRx.len);
+            electron.SendUsbPacket(electron.usbBuffer.extraDataTx, 32);
+            memset(usbRx.buf,0,100);
+            usbRx.len=0;
+        }
+#if 0
         for (int p = 0; p < 4; p++)
         {
             // send joint angles
@@ -96,7 +112,7 @@ void Main(void)
                 jointSetPoints[j] = *((float*) (ptr + 4 * j + 1));
             }
 
-            while (electron.lcd->isBusy);
+            //while (electron.lcd->isBusy);
             if (p == 0)
                 electron.lcd->WriteFrameBuffer(electron.GetLcdBufferPtr(),
                                                60 * 240 * 3);
@@ -775,6 +791,7 @@ void testAssemblyProtocolFrame()
 #include "flash.h"
 
 #include "paj7620u2.h"
+#include "stm32f4xx_hal_uart.h"
 
 ///#include "paj7620.h"
 
@@ -785,6 +802,40 @@ uint8_t testuart[]={"testuart"};
 
 uint8_t usbTestBuf[300]={0};
 extern usbRxBuf_t usbRx;
+
+uint8_t uartRxBuf[100]={0};
+
+
+#define RXBUFFERSIZE 256   //最大接收的字节数
+uint8_t RxBuffer[RXBUFFERSIZE];//接收数据
+uint8_t aRxBuffer; //接收中断缓冲
+uint8_t Uart1_cet=0;//接收缓冲区计数
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    UNUSED(huart);
+    if(Uart1_cet>=255)//对Uart_cetde的位数进行判断是否字符串数据溢出
+    {
+        Uart1_cet=0;
+        memset(RxBuffer,0x00,sizeof(RxBuffer));
+        HAL_UART_Transmit(&huart1, (uint8_t *)"数据溢出", 10,0xFFFF);
+    }
+    else
+    {
+        RxBuffer[Uart1_cet++] = aRxBuffer;   //接收数据转存
+
+        if((RxBuffer[Uart1_cet-1] == 0x0A)&&(RxBuffer[Uart1_cet-2] == 0x0D)) //判断结束位
+        {
+            HAL_UART_Transmit(&huart1, (uint8_t *)&RxBuffer, Uart1_cet,0xFFFF); //将收到的信息发送出去
+            while(HAL_UART_GetState(&huart1) == HAL_UART_STATE_BUSY_TX);//检测UART发送结束
+            Uart1_cet = 0;
+            memset(RxBuffer,0x00,sizeof(RxBuffer)); //清空数组
+        }
+    }
+
+    HAL_UART_Receive_IT(&huart1, (uint8_t *)&aRxBuffer, 1);   //再开启接收中断（因为里面中断只会触发一次，因此需要再次开启）
+}
+
+
 void Main(void)
 {
 
@@ -799,6 +850,9 @@ void Main(void)
 
   //  test_paj7260u2();
     MX_USART1_UART_Init();
+    HAL_UART_Receive_IT(&huart1,RxBuffer,1);
+
+
     HAL_Delay(2000);
     electron.lcd->Init(Screen::DEGREE_0);
     electron.lcd->SetWindow(0, 239, 0, 239);
@@ -810,26 +864,34 @@ void Main(void)
 
    // printf("printf:%s",testuart);
    // testAssemblyProtocolFrame();
-    Gesture_test();
+   // Gesture_test();
 
     //paj7620Init();
     HAL_Delay(200);
     //Gesture_test2();
-
+    void JointStatusUpdata(void);
+    uint16_t sendcount=1;
+    while(1)
+    {
+        //electron.SendUsbPacket(testuart, sizeof(testuart));
+        myPrintf("%d",sendcount);
+        sendcount++;
+        HAL_Delay(1000);
+    }
 #if 1
     // 0.先只连接一个舵机,不设置地址，测试硬件和舵机固件是否OK。
 
     // 1.确保广播Joint的变量正确，直接更新 UpdateJointAngle
     //   可能会因为角度不在变量范围内不发送指令。（请详细读代码）
-    electron.joint[0].id = 4;
-    electron.joint[0].angleMax = 180;
-    electron.joint[0].angle = 0;
-    electron.joint[0].modelAngelMin = -90;
-    electron.joint[0].modelAngelMax = 90;
+   // electron.joint[0].id = 4;
+   // electron.joint[0].angleMax = 180;
+  ///  electron.joint[0].angle = 0;
+  //  electron.joint[0].modelAngelMin = -90;
+  //  electron.joint[0].modelAngelMax = 90;
 
-    electron.joint[0].angleMin = 0;
+  //  electron.joint[0].angleMin = 0;
     // 2.使用广播地址是能
-    electron.SetJointEnable(electron.joint[0], true);
+   // electron.SetJointEnable(electron.joint[0], true);
 
     for (int j = 0; j < 300; ++j) {
         usbTestBuf[j]=j;
@@ -838,10 +900,12 @@ void Main(void)
     // 3.这时候就能看到舵机做往复运动了。
     while (1)
     {
+
+
         for (int i = -15; i < 15; i += 1)
         {
             float angle = i;
-            electron.UpdateJointAngle(electron.joint[0], angle);
+            //electron.UpdateJointAngle(electron.joint[0], angle);
             HAL_Delay(20);
           //  electron.SendUsbPacket(testuart,sizeof(testuart));
            /* memset(usbTestBuf,0x00,sizeof(usbTestBuf));
@@ -857,31 +921,33 @@ void Main(void)
             usbTestBuf[9]=0x01;*/
           //  electron.SendUsbPacket(usbTestBuf,sizeof(usbTestBuf));
             //testAssemblyProtocolFrame();
-            //testAssemblyProtocolFrame();
+            //testAssemblyProtocolFrame();*/
 
-           // if(usbRx.len)
-           // {
-           //     testReceiveMasterUsbData(usbRx.buf,usbRx.len);
-           //     memset(usbRx.buf,0,100);
-           //     usbRx.len=0;
-           // }
+            if(usbRx.len)
+            {
+                testReceiveMasterUsbData(usbRx.buf,usbRx.len);
+                memset(usbRx.buf,0,100);
+                usbRx.len=0;
+                //electron.SendUsbPacket(testuart,sizeof(testuart));
+            }
         }
         for (int i = 15; i > -15; i -= 1)
         {
             float angle = i;
-            electron.UpdateJointAngle(electron.joint[0], angle);
+           // electron.UpdateJointAngle(electron.joint[0], angle);
             HAL_Delay(20);
             //electron.SendUsbPacket(testuart,sizeof(testuart));
            // memset(usbTestBuf,0x66,sizeof(usbTestBuf));
           //  electron.SendUsbPacket(usbTestBuf,sizeof(usbTestBuf));
             //testAssemblyProtocolFrame();
             //testAssemblyProtocolFrame();
-            //if(usbRx.len)
-           // {
-           //     testReceiveMasterUsbData(usbRx.buf,usbRx.len);
-           //     memset(usbRx.buf,0,100);
-            //    usbRx.len=0;
-            //}
+            if(usbRx.len)
+           {
+                testReceiveMasterUsbData(usbRx.buf,usbRx.len);
+                memset(usbRx.buf,0,100);
+                usbRx.len=0;
+               //electron.SendUsbPacket(testuart,sizeof(testuart));
+            }
         }
     }
 #endif

@@ -45,7 +45,7 @@ uint32_t STMFLASH_ReadWord(uint32_t faddr)
     return *(__IO uint32_t *)faddr;
 }
 
-void STMFLASH_Write(uint32_t WriteAddr, uint32_t *pBuffer, uint32_t Num)
+void STMFLASH_Write(uint32_t WriteAddr, unsigned int *pBuffer, uint32_t Num)
 {
     FLASH_EraseInitTypeDef FlashEraseInit;
     HAL_StatusTypeDef FlashStatus = HAL_OK;
@@ -95,7 +95,7 @@ void STMFLASH_Write(uint32_t WriteAddr, uint32_t *pBuffer, uint32_t Num)
     HAL_FLASH_Lock(); //上锁
 }
 
-void STMFLASH_Read(uint32_t ReadAddr, uint32_t *pBuffer, uint32_t size)
+void STMFLASH_Read(uint32_t ReadAddr, unsigned int *pBuffer, uint32_t size)
 {
     uint32_t i;
     for (i = 0; i < size; i++)

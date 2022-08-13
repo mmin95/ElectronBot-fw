@@ -4,9 +4,12 @@
 #include "stm32f4xx.h"
 #include "screen.h"
 #include "i2c.h"
+#include "myPrintf.h"
 
 
 #define ANY 0
+
+#define iicMaxTry 5
 
 struct usbRxBuf_t
 {
