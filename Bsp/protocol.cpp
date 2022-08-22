@@ -355,6 +355,7 @@ void ProtocolProcessing(uint8_t* buf, uint16_t len)
         }
     }
 
+
     if(ProtocolItem.cmd == CMD_ReadAllJointStatus)
     {
         ProtocolItem.dataLen= sizeof(ElectronBotJointStatus_t);
@@ -390,7 +391,6 @@ void ProtocolProcessing(uint8_t* buf, uint16_t len)
         ProtocolItem.dataLen=0;
         ProtocolItem.frame=ResponseFrame;
         ComposeProtocolFrame(txbuf.buf,&txbuf.dataLen,&ProtocolItem);
-
     }
 
     BufClear((uint8_t* )&rxbuf,0,sizeof(rxbuf));

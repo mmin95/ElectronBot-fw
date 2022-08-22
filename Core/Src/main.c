@@ -70,6 +70,10 @@ void MX_FREERTOS_Init(void);
   * @brief  The application entry point.
   * @retval int
   */
+
+
+
+
 int main(void)
 {
   /* USER CODE BEGIN 1 */
@@ -104,6 +108,17 @@ int main(void)
   /* USER CODE END 2 */
 
   /* Init scheduler */
+
+
+   // MX_DMA_Init();
+   // MX_USART1_UART_Init();
+   // HAL_UART_Receive_DMA(&huart1,(uint8_t*)ReceiveBuff,BUFFERSIZE);
+  //  __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+  //  while(1){
+  //      uart1_data();
+  //  }
+
+
   osKernelInitialize();  /* Call init function for freertos objects (in freertos.c) */
   MX_FREERTOS_Init();
   /* Start scheduler */

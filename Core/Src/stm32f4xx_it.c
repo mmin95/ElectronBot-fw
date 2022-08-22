@@ -183,14 +183,30 @@ void SPI1_IRQHandler(void)
 /**
   * @brief This function handles USART1 global interrupt.
   */
+#define BUFFERSIZE 255	//可接收的最大数据量
+extern uint8_t recv_end_flag,Rx_len,bootfirst;
 void USART1_IRQHandler(void)
 {
   /* USER CODE BEGIN USART1_IRQn 0 */
 
   /* USER CODE END USART1_IRQn 0 */
+//    UART_IDLECallBack(&huart1);
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
+    uint32_t temp;
+    if(USART1 == huart1.Instance)//判断是否为串口1中断
 
+    {
+        if(RESET != __HAL_UART_GET_FLAG(&huart1,UART_FLAG_IDLE))//如果为串口1
+        {
+            __HAL_UART_CLEAR_IDLEFLAG(&huart1);//清除中断标志
+            HAL_UART_DMAStop(&huart1);//停止DMA接收
+            temp  = __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);//获取DMA当前还有多少未填充
+            Rx_len =  BUFFERSIZE - temp; //计算串口接收到的数据个数
+            recv_end_flag = 1;
+        }
+    }
+    /* USER CODE END USART1_IRQn 1 */
   /* USER CODE END USART1_IRQn 1 */
 }
 

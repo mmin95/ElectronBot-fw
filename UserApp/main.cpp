@@ -792,6 +792,8 @@ void testAssemblyProtocolFrame()
 
 #include "paj7620u2.h"
 #include "stm32f4xx_hal_uart.h"
+#include "dma.h"
+#include "usart.h"
 
 ///#include "paj7620.h"
 
@@ -810,6 +812,7 @@ uint8_t uartRxBuf[100]={0};
 uint8_t RxBuffer[RXBUFFERSIZE];//接收数据
 uint8_t aRxBuffer; //接收中断缓冲
 uint8_t Uart1_cet=0;//接收缓冲区计数
+/*
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
     UNUSED(huart);
@@ -833,13 +836,131 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
     }
 
     HAL_UART_Receive_IT(&huart1, (uint8_t *)&aRxBuffer, 1);   //再开启接收中断（因为里面中断只会触发一次，因此需要再次开启）
+}*/
+/*#define BUF_LEN 20
+uint8_t RevByte=0;
+uint8_t RevBuf[BUF_LEN]={0};
+uint16_t Revcnt=0;
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if(huart->Instance==USART1)
+    {
+        RevBuf[Revcnt]=RevByte;
+        Revcnt++;
+        if(Revcnt==BUF_LEN)
+         {
+            Revcnt=0;
+         }
+        HAL_UART_Transmit(&huart1,&RevByte, 1,50);
+        HAL_UART_Receive_IT(&huart1, &RevByte, 1); //串口1中断接收数据
+    }
 }
+
+uint16_t DMA_Usart1_RxSize=0;
+uint8_t RevFlag=0;
+extern DMA_HandleTypeDef hdma_usart1_rx;
+void UART_IDLECallBack(UART_HandleTypeDef *huart)
+{
+    uint32_t temp;
+    if(huart == &huart1)
+    {
+        if((__HAL_UART_GET_FLAG(huart,UART_FLAG_IDLE) != RESET))
+        {
+            __HAL_UART_CLEAR_IDLEFLAG(&huart1);//清除标志位
+
+            HAL_UART_DMAStop(&huart1);//停止DMA
+            DMA_Usart1_RxSize = BUF_LEN - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);// 获取DMA中传输的数据个数
+            RevFlag = 1;
+            HAL_UART_Receive_DMA(&huart1,RevBuf,BUF_LEN); //开启下次接收
+        }
+    }
+}
+
+*/
+
+/*
+#include "stm32f4xx_hal_uart.h"
+#define BUF_LEN 20
+uint8_t RevByte=0;
+uint8_t RevBuf[BUF_LEN]={0};
+uint16_t Revcnt=0;
+
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+    if(huart->Instance==USART1)
+    {
+        RevBuf[Revcnt]=RevByte;
+        Revcnt++;
+        if(Revcnt==BUF_LEN)
+        {
+            Revcnt=0;
+        }
+        //HAL_USART_Transmit(&husart1,&RevByte, 1,50);
+        HAL_UART_Transmit(&huart1,&RevByte, 1,50);
+
+        HAL_UART_Receive_IT(&huart1, &RevByte, 1); //串口1中断接收数据
+        //HAL_USART_Transmit(&husart1,&RevByte, 1,50);
+
+    }
+}*/
+
+
+
+void uart1_data(void);					//接收函数
+#ifdef __GNUC__									//串口重定向
+#define PUTCHAR_PROTOTYPE int __io_putchar(int ch)
+#else
+#define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
+#endif
+PUTCHAR_PROTOTYPE
+{
+    HAL_UART_Transmit(&huart1 , (uint8_t *)&ch, 1, 0xFFFF);
+    return ch;
+}
+/* USER CODE END PFP */
+
+#define BUFFERSIZE 255           //可以接收的最大字符个数
+uint8_t ReceiveBuff[BUFFERSIZE]; //接收缓冲区
+uint8_t recv_end_flag = 0,Rx_len;//接收完成中断标志，接收到字符长度
+/* USER CODE END PV */
+
+
+
+void uart1_data(void)
+{
+    if(recv_end_flag ==1)//接收完成标志
+    {
+        //printf("数据长度=%d\r\n",Rx_len);//打印接收到的数据长度
+        //printf("数据内容:");
+        /* printf("dataLen=%d\r\n",Rx_len);//打印接收到的数据长度
+         printf("data:");
+         for(int i=0;i<Rx_len;i++)
+         {
+             printf("%x",ReceiveBuff[i]);//向串口打印接收到的数据
+         }
+         printf("data:");
+         for(int i=0;i<Rx_len;i++)
+         {
+             printf("%c",ReceiveBuff[i]);//向串口打印接收到的数据
+         }
+         printf("\r\n");
+         for(int i = 0; i < Rx_len ; i++) //清空接收缓存区
+             ReceiveBuff[i]=0;//置0*/
+        HAL_UART_Transmit(&huart1,ReceiveBuff, Rx_len,50);
+        Rx_len=0;//接收数据长度清零
+        recv_end_flag=0;//接收标志位清零
+    }
+    //开启下一次接收
+    HAL_UART_Receive_DMA(&huart1,(uint8_t*)ReceiveBuff,BUFFERSIZE);
+}
+/* USER CODE END 4 */
 
 
 void Main(void)
 {
 
-
+    HAL_Init();
+    //SystemClock_Config();
   // HAL_Delay(2000);
   // electron.lcd->Init(Screen::DEGREE_0);
   // electron.lcd->SetWindow(0, 239, 0, 239);
@@ -849,8 +970,22 @@ void Main(void)
   //  test_flash();
 
   //  test_paj7260u2();
+    //MX_USART1_UART_Init();
+    //HAL_UART_Receive_IT(&huart1, &RevByte, 1); //串口1中断接收数据
+    //
+
+    MX_DMA_Init();
     MX_USART1_UART_Init();
-    HAL_UART_Receive_IT(&huart1,RxBuffer,1);
+    HAL_UART_Receive_DMA(&huart1,(uint8_t*)ReceiveBuff,BUFFERSIZE);
+    __HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
+    while(1){
+        uart1_data();
+    }
+
+     //HAL_UART_Receive_IT(&huart1,&RevByte,1);
+
+    //__HAL_UART_ENABLE_IT(&huart1,UART_IT_IDLE);//打开串口空闲中断
+   // HAL_UART_Receive_DMA(&huart1, RevBuf, BUF_LEN); //串口1DMA接收数据
 
 
     HAL_Delay(2000);
@@ -858,9 +993,9 @@ void Main(void)
     electron.lcd->SetWindow(0, 239, 0, 239);
     //HAL_UART_Transmit(UART_HandleTypeDef *huart, uint8_t *pData, uint16_t Size, uint32_t Timeout);
     //HAL_UART_Transmit(&huart1,&testuart[0], sizeof(testuart),50);
-    HAL_UART_Transmit(&huart1,testuart, sizeof(testuart),50);
+   // HAL_UART_Transmit(&huart1,testuart, sizeof(testuart),50);
     HAL_Delay(200);
-    myPrintf("%s",paj7620u2_init()?"paj7620 init succes!!\r\n":"paj7620 init fail!!\r\n");
+    //myPrintf("%s",paj7620u2_init()?"paj7620 init succes!!\r\n":"paj7620 init fail!!\r\n");
 
    // printf("printf:%s",testuart);
    // testAssemblyProtocolFrame();
@@ -869,14 +1004,24 @@ void Main(void)
     //paj7620Init();
     HAL_Delay(200);
     //Gesture_test2();
-    void JointStatusUpdata(void);
+   // void JointStatusUpdata(void);
+
     uint16_t sendcount=1;
     while(1)
     {
         //electron.SendUsbPacket(testuart, sizeof(testuart));
-        myPrintf("%d",sendcount);
+        //myPrintf("%d",sendcount);
         sendcount++;
-        HAL_Delay(1000);
+       // HAL_Delay(1000);
+        //if(RevFlag == 1)
+       // if(HAL_OK==HAL_UART_Receive(&huart1,&RevByte, 1,100))
+       // {
+            //RevFlag = 0;
+           // HAL_UART_Receive(&huart1,&RevByte, 1,100);
+            //HAL_UART_Transmit(&huart1,(uint8_t)&"DMA RevData\r\n",13,50);
+         //   HAL_UART_Transmit(&huart1,&RevByte, 1,50);
+       // }
+
     }
 #if 1
     // 0.先只连接一个舵机,不设置地址，测试硬件和舵机固件是否OK。

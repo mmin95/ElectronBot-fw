@@ -7,7 +7,7 @@
 #include "stm32f4xx_hal.h"
 #include "stm32f4xx_hal_flash_ex.h"
 #include "flash.h"
-#include <cmath>
+//#include <cmath>
 #include "stm32f4xx_hal_uart.h"
 #include "usart.h"
 
